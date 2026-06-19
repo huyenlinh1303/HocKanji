@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Từ Vựng Kanji</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="ph-fill ph-book-open-text"></i>
+                <span>KanjiMaster</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#" data-target="dashboard" class="active"><i class="ph ph-squares-four"></i> Tổng quan</a></li>
+                <li><a href="#" data-target="add-word"><i class="ph ph-plus-circle"></i> Thêm từ mới</a></li>
+                <li><a href="#" data-target="practice"><i class="ph ph-brain"></i> Luyện tập</a></li>
+                <li><a href="#" data-target="dictionary"><i class="ph ph-books"></i> Từ điển</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-header">
+                <h1 id="page-title">Tổng quan</h1>
+                <div class="user-profile">
+                    <div class="avatar"><i class="ph ph-user"></i></div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="page-section active">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="ph ph-cards"></i></div>
+                        <div class="stat-info">
+                            <h3>Tổng số từ</h3>
+                            <p id="total-words-count">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="ph ph-folder"></i></div>
+                        <div class="stat-info">
+                            <h3>Số nhóm (Phần nhận diện)</h3>
+                            <p id="total-groups-count">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="ph ph-calendar-check"></i></div>
+                        <div class="stat-info">
+                            <h3>Đã ôn tập hôm nay</h3>
+                            <p id="practiced-today-status">Chưa</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="welcome-banner">
+                    <h2>Chào mừng trở lại!</h2>
+                    <p>Hãy duy trì thói quen luyện tập mỗi ngày để ghi nhớ Kanji tốt hơn.</p>
+                    <button class="btn btn-primary" id="btn-start-practice-dash">Bắt đầu luyện tập ngay</button>
+                </div>
+            </section>
+
+            <!-- Add Word Section -->
+            <section id="add-word" class="page-section">
+                <div class="card form-card">
+                    <h2>Thêm từ vựng mới</h2>
+                    <p class="subtitle">Nhập phần nhận diện chung để gom nhóm, sau đó nhập từ ghép và nghĩa.</p>
+                    
+                    <form id="add-word-form">
+                        <div class="form-group">
+                            <label for="component-input">Phần nhận diện (VD: 家 trong 家族)</label>
+                            <input type="text" id="component-input" placeholder="Nhập chữ Hán dùng làm điểm nhận diện..." required autocomplete="off">
+                            <div id="component-suggestions" class="suggestions-list hidden"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="kanji-input">Từ Kanji hoàn chỉnh</label>
+                            <input type="text" id="kanji-input" placeholder="VD: 家族" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="meaning-input">Nghĩa tiếng Việt</label>
+                            <input type="text" id="meaning-input" placeholder="VD: Gia đình" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Lưu từ vựng</button>
+                    </form>
+                    <div id="add-success-msg" class="alert success hidden">Đã thêm từ vựng thành công!</div>
+                </div>
+            </section>
+
+            <!-- Practice Section -->
+            <section id="practice" class="page-section">
+                <div id="practice-setup">
+                    <div class="card text-center">
+                        <h2>Luyện tập hàng ngày</h2>
+                        <p>Hệ thống sẽ chọn ra ngẫu nhiên tối đa 5 nhóm phần nhận diện bạn đã lưu để ôn tập.</p>
+                        <button id="btn-start-practice" class="btn btn-primary btn-large mt-4">Bắt đầu ngay</button>
+                    </div>
+                </div>
+
+                <div id="practice-active" class="hidden">
+                    <div class="practice-header">
+                        <h2 id="practice-component-display" class="kanji-large">家</h2>
+                        <p>Hãy liệt kê tất cả các từ Kanji và nghĩa thuộc phần nhận diện này.</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="practice-progress"></div>
+                        </div>
+                        <p class="progress-text"><span id="current-group-index">1</span> / <span id="total-groups-index">5</span> nhóm</p>
+                    </div>
+
+                    <div class="card practice-input-card">
+                        <form id="practice-form">
+                            <div id="practice-inputs-container">
+                                <!-- Inputs will be generated here dynamically based on the number of words in the group -->
+                            </div>
+                            <div class="practice-actions">
+                                <button type="submit" class="btn btn-primary">Kiểm tra</button>
+                                <button type="button" id="btn-skip-group" class="btn btn-secondary">Bỏ qua</button>
+                            </div>
+                        </form>
+                        <div id="practice-feedback" class="feedback-area hidden"></div>
+                        <button id="btn-next-group" class="btn btn-primary hidden w-100 mt-3">Tiếp tục <i class="ph ph-arrow-right"></i></button>
+                    </div>
+                </div>
+                
+                <div id="practice-summary" class="hidden">
+                    <div class="card text-center">
+                        <div class="success-icon-large"><i class="ph-fill ph-check-circle"></i></div>
+                        <h2>Hoàn thành xuất sắc!</h2>
+                        <p>Bạn đã hoàn thành bài ôn tập ngày hôm nay.</p>
+                        <button id="btn-back-home" class="btn btn-secondary mt-4">Về trang chủ</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dictionary Section -->
+            <section id="dictionary" class="page-section">
+                <div class="card">
+                    <div class="dict-header">
+                        <h2>Từ điển của bạn</h2>
+                        <div class="search-box">
+                            <i class="ph ph-magnifying-glass"></i>
+                            <input type="text" id="search-dict" placeholder="Tìm kiếm từ hoặc nghĩa...">
+                        </div>
+                    </div>
+                    
+                    <div id="dictionary-list" class="dict-list">
+                        <!-- Grouped lists will appear here -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
