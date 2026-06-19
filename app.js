@@ -936,3 +936,4 @@ document.querySelectorAll('.nav-links a').forEach(link => {
 // Start app
 loadData();
 navigateTo('dashboard');
+
