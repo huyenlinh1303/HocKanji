@@ -1,6 +1,6 @@
 // === STATE MANAGEMENT ===
 let appData = {
-    components: [], // { id, name, phonetic, meaning }
+    components: [], // { id, name, phonetic, romaji, meaning }
     words: [],      // { id, componentId, kanji, romaji, meaning }
     practiceState: {
         lastDate: null,
@@ -20,6 +20,7 @@ function loadData() {
         appData.components.forEach(c => {
             if (c.phonetic === undefined) c.phonetic = '';
             if (c.meaning === undefined) c.meaning = '';
+            if (c.romaji === undefined) c.romaji = '';
         });
         appData.words.forEach(w => {
             if (w.romaji === undefined) w.romaji = '';
@@ -101,6 +102,7 @@ document.getElementById('add-group-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const name = document.getElementById('group-name-input').value.trim();
     const phonetic = document.getElementById('group-phonetic-input').value.trim();
+    const romaji = document.getElementById('group-romaji-input').value.trim();
     const meaning = document.getElementById('group-meaning-input').value.trim();
 
     if (!name) return;
@@ -109,12 +111,14 @@ document.getElementById('add-group-form').addEventListener('submit', (e) => {
     if (comp) {
         // Update existing if created previously without info
         comp.phonetic = phonetic;
+        comp.romaji = romaji;
         comp.meaning = meaning;
     } else {
         appData.components.push({
             id: generateId(),
             name,
             phonetic,
+            romaji,
             meaning
         });
     }
@@ -146,11 +150,15 @@ function renderGroups() {
                     <div class="group-item-kanji">${comp.name}</div>
                     <div class="group-item-info">
                         <div class="group-item-phonetic">Âm: ${comp.phonetic || '--'}</div>
+                        <div class="group-item-phonetic">Romaji: ${comp.romaji || '--'}</div>
                         <div class="group-item-meaning">Nghĩa: ${comp.meaning || '--'}</div>
                         <div class="text-muted" style="font-size: 13px; margin-top: 4px;">${wordCount} từ vựng</div>
                     </div>
                 </div>
                 <div class="group-item-actions">
+                    <button class="btn btn-secondary btn-small" onclick="openEditGroupModal('${comp.id}')">
+                        <i class="ph ph-pencil"></i> Sửa thông tin nhóm
+                    </button>
                     <button class="btn btn-secondary btn-small" onclick="handleAddWordToGroup('${comp.name}')">
                         <i class="ph ph-plus"></i> Thêm từ vào nhóm này
                     </button>
@@ -165,6 +173,39 @@ function renderGroups() {
         `;
     });
 }
+
+// Edit Modal Logic
+window.openEditGroupModal = function(id) {
+    const comp = appData.components.find(c => c.id === id);
+    if(!comp) return;
+    
+    document.getElementById('edit-group-id').value = comp.id;
+    document.getElementById('edit-group-name').value = comp.name;
+    document.getElementById('edit-group-phonetic').value = comp.phonetic || '';
+    document.getElementById('edit-group-romaji').value = comp.romaji || '';
+    document.getElementById('edit-group-meaning').value = comp.meaning || '';
+    
+    document.getElementById('edit-group-modal').classList.remove('hidden');
+};
+
+document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
+    document.getElementById('edit-group-modal').classList.add('hidden');
+});
+
+document.getElementById('edit-group-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-group-id').value;
+    const comp = appData.components.find(c => c.id === id);
+    if(comp) {
+        comp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
+        comp.romaji = document.getElementById('edit-group-romaji').value.trim();
+        comp.meaning = document.getElementById('edit-group-meaning').value.trim();
+        saveData();
+        renderGroups();
+        document.getElementById('edit-group-modal').classList.add('hidden');
+    }
+});
+
 
 window.handleAddWordToGroup = function(groupName) {
     navigateTo('add-word');
@@ -249,7 +290,7 @@ addWordForm.addEventListener('submit', (e) => {
 
     let comp = appData.components.find(c => c.name === compName);
     if (!comp) {
-        comp = { id: generateId(), name: compName, phonetic: '', meaning: '' };
+        comp = { id: generateId(), name: compName, phonetic: '', romaji: '', meaning: '' };
         appData.components.push(comp);
     }
 
@@ -318,7 +359,7 @@ function renderDictionary() {
                 <div class="dict-group-title">
                     ${comp.name} 
                     <span style="font-size: 14px; margin-left:8px; color: var(--text-muted); font-weight:normal;">
-                        ${comp.phonetic ? `[${comp.phonetic}]` : ''} ${comp.meaning}
+                        ${comp.phonetic ? `[${comp.phonetic}]` : ''} ${comp.romaji ? `(${comp.romaji})` : ''} ${comp.meaning}
                     </span>
                     <span class="badge">${filteredWords.length} từ</span>
                 </div>
@@ -351,29 +392,24 @@ document.getElementById('search-dict').addEventListener('input', () => {
 let currentPracticeIndex = 0;
 let currentPracticeComponent = null;
 
+function generateRandomGroups() {
+    const validComponents = appData.components.filter(c => appData.words.some(w => w.componentId === c.id));
+    const shuffled = validComponents.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 5).map(c => c.id);
+}
+
 function initPracticeView() {
     practiceMode = 'daily';
-    const today = new Date().toDateString();
     
-    if (appData.practiceState.lastDate !== today) {
-        const validComponents = appData.components.filter(c => appData.words.some(w => w.componentId === c.id));
-        const shuffled = validComponents.sort(() => 0.5 - Math.random());
-        const selected = shuffled.slice(0, 5).map(c => c.id);
-        
-        appData.practiceState = {
-            lastDate: today,
-            dailyComponentIds: selected,
-            completed: false
-        };
-        saveData();
-    }
-
-    if (appData.practiceState.dailyComponentIds.length === 0) {
+    const validComponents = appData.components.filter(c => appData.words.some(w => w.componentId === c.id));
+    
+    if (validComponents.length === 0) {
         document.getElementById('practice-setup').innerHTML = '<div class="card text-center"><h2>Chưa có dữ liệu</h2><p>Hãy thêm từ vựng trước khi luyện tập nhé.</p></div>';
         return;
     }
 
-    document.getElementById('btn-start-practice').textContent = 'Bắt đầu 5 Nhóm Ngẫu Nhiên';
+    const count = Math.min(5, validComponents.length);
+    document.getElementById('btn-start-practice').textContent = `Bắt đầu Luyện Tập (${count} Nhóm Ngẫu Nhiên)`;
 
     if (appData.practiceState.completed) {
         showPracticeSummary();
@@ -385,6 +421,11 @@ function initPracticeView() {
 }
 
 document.getElementById('btn-start-practice').addEventListener('click', () => {
+    appData.practiceState.lastDate = new Date().toDateString();
+    appData.practiceState.dailyComponentIds = generateRandomGroups();
+    appData.practiceState.completed = false;
+    saveData();
+
     document.getElementById('practice-setup').classList.add('hidden');
     document.getElementById('practice-active').classList.remove('hidden');
     currentPracticeIndex = 0;
@@ -394,7 +435,7 @@ document.getElementById('btn-start-practice').addEventListener('click', () => {
 document.getElementById('btn-start-practice-dash').addEventListener('click', () => {
     practiceMode = 'daily';
     navigateTo('practice');
-    if (!appData.practiceState.completed && appData.practiceState.dailyComponentIds.length > 0) {
+    if (!appData.practiceState.completed) {
         document.getElementById('btn-start-practice').click();
     }
 });
@@ -402,10 +443,8 @@ document.getElementById('btn-start-practice-dash').addEventListener('click', () 
 document.getElementById('btn-retry-practice').addEventListener('click', () => {
     // Retry daily practice
     if(practiceMode === 'daily') {
-        appData.practiceState.completed = false;
-        saveData();
-        initPracticeView();
-        document.getElementById('btn-start-practice').click();
+        document.getElementById('practice-summary').classList.add('hidden');
+        document.getElementById('btn-start-practice').click(); // Re-rolls random groups
     } else {
         // Retry single group
         document.getElementById('practice-summary').classList.add('hidden');
@@ -463,7 +502,7 @@ function renderPracticeStep() {
     // Update UI
     document.getElementById('practice-component-display').textContent = currentPracticeComponent.name;
     document.getElementById('practice-component-details').textContent = 
-        `Phiên âm: ${currentPracticeComponent.phonetic || '--'} | Nghĩa: ${currentPracticeComponent.meaning || '--'}`;
+        `Phiên âm: ${currentPracticeComponent.phonetic || '--'} | Romaji: ${currentPracticeComponent.romaji || '--'} | Nghĩa: ${currentPracticeComponent.meaning || '--'}`;
     
     if (practiceMode === 'single') {
         document.getElementById('practice-progress-container').classList.add('hidden');
