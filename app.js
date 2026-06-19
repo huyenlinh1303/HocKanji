@@ -179,6 +179,61 @@ window.openEditGroupModal = function(id) {
     const comp = appData.components.find(c => c.id === id);
     if(!comp) return;
     
+    // Fallback: Nếu HTML bị cache chưa có modal, tự động tạo modal
+    if (!document.getElementById('edit-group-modal')) {
+        const modalHTML = `
+        <div id="edit-group-modal" class="modal hidden">
+            <div class="modal-content card">
+                <div class="modal-header">
+                    <h2>Sửa thông tin nhóm</h2>
+                    <button class="btn-close-modal" id="btn-close-edit-modal"><i class="ph ph-x"></i></button>
+                </div>
+                <form id="edit-group-form" class="mt-4">
+                    <input type="hidden" id="edit-group-id">
+                    <div class="form-group">
+                        <label for="edit-group-name">Tên Nhóm / Phần nhận diện</label>
+                        <input type="text" id="edit-group-name" readonly style="background: var(--bg-color); cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-phonetic">Phiên âm Hán Việt</label>
+                        <input type="text" id="edit-group-phonetic" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-romaji">Phiên âm Romaji</label>
+                        <input type="text" id="edit-group-romaji" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-group-meaning">Nghĩa tiếng Việt</label>
+                        <input type="text" id="edit-group-meaning" autocomplete="off">
+                    </div>
+                    <div class="mt-4" style="text-align: right;">
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        // Re-bind events for the newly injected modal
+        document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
+            document.getElementById('edit-group-modal').classList.add('hidden');
+        });
+
+        document.getElementById('edit-group-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const editId = document.getElementById('edit-group-id').value;
+            const editComp = appData.components.find(c => c.id === editId);
+            if(editComp) {
+                editComp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
+                editComp.romaji = document.getElementById('edit-group-romaji').value.trim();
+                editComp.meaning = document.getElementById('edit-group-meaning').value.trim();
+                saveData();
+                renderGroups();
+                document.getElementById('edit-group-modal').classList.add('hidden');
+            }
+        });
+    }
+
     document.getElementById('edit-group-id').value = comp.id;
     document.getElementById('edit-group-name').value = comp.name;
     document.getElementById('edit-group-phonetic').value = comp.phonetic || '';
@@ -188,23 +243,31 @@ window.openEditGroupModal = function(id) {
     document.getElementById('edit-group-modal').classList.remove('hidden');
 };
 
-document.getElementById('btn-close-edit-modal').addEventListener('click', () => {
-    document.getElementById('edit-group-modal').classList.add('hidden');
-});
-
-document.getElementById('edit-group-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-group-id').value;
-    const comp = appData.components.find(c => c.id === id);
-    if(comp) {
-        comp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
-        comp.romaji = document.getElementById('edit-group-romaji').value.trim();
-        comp.meaning = document.getElementById('edit-group-meaning').value.trim();
-        saveData();
-        renderGroups();
+// Events are now dynamically bound inside openEditGroupModal if injected,
+// but we keep them here in case HTML is properly loaded from the start.
+const closeBtn = document.getElementById('btn-close-edit-modal');
+if(closeBtn) {
+    closeBtn.addEventListener('click', () => {
         document.getElementById('edit-group-modal').classList.add('hidden');
-    }
-});
+    });
+}
+
+const editForm = document.getElementById('edit-group-form');
+if(editForm) {
+    editForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-group-id').value;
+        const comp = appData.components.find(c => c.id === id);
+        if(comp) {
+            comp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
+            comp.romaji = document.getElementById('edit-group-romaji').value.trim();
+            comp.meaning = document.getElementById('edit-group-meaning').value.trim();
+            saveData();
+            renderGroups();
+            document.getElementById('edit-group-modal').classList.add('hidden');
+        }
+    });
+}
 
 
 window.handleAddWordToGroup = function(groupName) {
