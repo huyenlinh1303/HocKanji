@@ -488,10 +488,14 @@ function renderDictionary() {
                 </div>
                 <div class="dict-words">
                     ${filteredWords.map(w => `
-                        <div class="dict-word-card" style="cursor: pointer;" onclick="openWordDetailModal('${w.id}')">
+                        <div class="dict-word-card" style="cursor: pointer; position: relative;" onclick="openWordDetailModal('${w.id}')">
+                            ${w.image ? `<img src="${w.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
                             <div class="dict-kanji">${w.kanji}</div>
                             <div class="dict-romaji">${w.romaji}</div>
                             <div class="dict-meaning">${w.meaning}</div>
+                            <button class="btn-edit-word" onclick="event.stopPropagation(); openEditWordModal('${w.id}')" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
+                                <i class="ph ph-pencil"></i>
+                            </button>
                         </div>
                     `).join('')}
                 </div>
@@ -534,6 +538,69 @@ window.openWordDetailModal = function(wordId) {
 
 document.getElementById('btn-close-word-modal')?.addEventListener('click', () => {
     document.getElementById('word-detail-modal').classList.add('hidden');
+});
+
+let currentEditWordImageBase64 = null;
+window.openEditWordModal = function(wordId) {
+    const w = appData.words.find(x => x.id === wordId);
+    if (!w) return;
+
+    document.getElementById('edit-word-id').value = w.id;
+    document.getElementById('edit-word-kanji').value = w.kanji;
+    document.getElementById('edit-word-romaji').value = w.romaji;
+    document.getElementById('edit-word-meaning').value = w.meaning;
+    
+    currentEditWordImageBase64 = w.image || null;
+    const previewDiv = document.getElementById('edit-word-image-preview');
+    const previewImg = document.getElementById('edit-word-image-preview-img');
+    const fileInput = document.getElementById('edit-word-image-input');
+    fileInput.value = ''; // Reset file input
+    
+    if (currentEditWordImageBase64) {
+        previewDiv.style.display = 'block';
+        previewImg.src = currentEditWordImageBase64;
+    } else {
+        previewDiv.style.display = 'none';
+        previewImg.src = '';
+    }
+
+    document.getElementById('edit-word-modal').classList.remove('hidden');
+};
+
+document.getElementById('btn-close-edit-word-modal')?.addEventListener('click', () => {
+    document.getElementById('edit-word-modal').classList.add('hidden');
+});
+
+document.getElementById('edit-word-image-input')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentEditWordImageBase64 = e.target.result;
+            document.getElementById('edit-word-image-preview').style.display = 'block';
+            document.getElementById('edit-word-image-preview-img').src = currentEditWordImageBase64;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        currentEditWordImageBase64 = null;
+        document.getElementById('edit-word-image-preview').style.display = 'none';
+        document.getElementById('edit-word-image-preview-img').src = '';
+    }
+});
+
+document.getElementById('edit-word-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const id = document.getElementById('edit-word-id').value;
+    const w = appData.words.find(x => x.id === id);
+    if (w) {
+        w.kanji = document.getElementById('edit-word-kanji').value.trim();
+        w.romaji = document.getElementById('edit-word-romaji').value.trim();
+        w.meaning = document.getElementById('edit-word-meaning').value.trim();
+        w.image = currentEditWordImageBase64;
+        saveData();
+        renderDictionary();
+        document.getElementById('edit-word-modal').classList.add('hidden');
+    }
 });
 
 // === PRACTICE LOGIC ===
@@ -660,6 +727,16 @@ function renderPracticeStep() {
         document.getElementById('total-groups-index').textContent = appData.practiceState.dailyComponentIds.length;
         const progressPercent = ((currentPracticeIndex) / appData.practiceState.dailyComponentIds.length) * 100;
         document.getElementById('practice-progress').style.width = `${progressPercent}%`;
+    }
+
+    const compWords = appData.words.filter(w => w.componentId === currentPracticeComponent.id);
+    const hintsContainer = document.getElementById('practice-image-hints');
+    if (hintsContainer) {
+        const imagesHtml = compWords
+            .filter(w => w.image)
+            .map(w => `<img src="${w.image}" style="height: 80px; width: 80px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="Gợi ý" />`)
+            .join('');
+        hintsContainer.innerHTML = imagesHtml;
     }
 
     // Reset inputs: Add exactly 1 blank row
