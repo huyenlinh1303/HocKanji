@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=2">
 </head>
 <body>
     <div class="app-container">
@@ -42,12 +42,13 @@
             <!-- Dashboard Section -->
             <section id="dashboard" class="page-section active">
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card clickable" id="card-total-words" title="Nhấn để xem từ điển">
                         <div class="stat-icon"><i class="ph ph-cards"></i></div>
                         <div class="stat-info">
                             <h3>Tổng số từ</h3>
                             <p id="total-words-count">0</p>
                         </div>
+                        <i class="ph ph-caret-right stat-arrow"></i>
                     </div>
                     <div class="stat-card clickable" id="card-groups" title="Nhấn để xem các nhóm">
                         <div class="stat-icon"><i class="ph ph-folder"></i></div>
@@ -57,12 +58,13 @@
                         </div>
                         <i class="ph ph-caret-right stat-arrow"></i>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable" id="card-practiced-today" title="Nhấn để đến phần luyện tập">
                         <div class="stat-icon"><i class="ph ph-calendar-check"></i></div>
                         <div class="stat-info">
                             <h3>Đã ôn tập hôm nay</h3>
                             <p id="practiced-today-status">Chưa</p>
                         </div>
+                        <i class="ph ph-caret-right stat-arrow"></i>
                     </div>
                 </div>
                 
@@ -229,6 +231,6 @@
         </main>
     </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=2"></script>
 </body>
 </html>
