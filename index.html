@@ -22,6 +22,7 @@
             </div>
             <ul class="nav-links">
                 <li><a href="#" data-target="dashboard" class="active"><i class="ph ph-squares-four"></i> Tổng quan</a></li>
+                <li><a href="#" data-target="groups"><i class="ph ph-folders"></i> Quản lý Nhóm</a></li>
                 <li><a href="#" data-target="add-word"><i class="ph ph-plus-circle"></i> Thêm từ mới</a></li>
                 <li><a href="#" data-target="practice"><i class="ph ph-brain"></i> Luyện tập</a></li>
                 <li><a href="#" data-target="dictionary"><i class="ph ph-books"></i> Từ điển</a></li>
@@ -48,12 +49,13 @@
                             <p id="total-words-count">0</p>
                         </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable" id="card-groups" title="Nhấn để xem các nhóm">
                         <div class="stat-icon"><i class="ph ph-folder"></i></div>
                         <div class="stat-info">
                             <h3>Số nhóm (Phần nhận diện)</h3>
                             <p id="total-groups-count">0</p>
                         </div>
+                        <i class="ph ph-caret-right stat-arrow"></i>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon"><i class="ph ph-calendar-check"></i></div>
@@ -71,11 +73,44 @@
                 </div>
             </section>
 
+            <!-- Groups Section -->
+            <section id="groups" class="page-section">
+                <div class="card form-card mb-4">
+                    <h2>Tạo Nhóm Mới (Phần nhận diện)</h2>
+                    <p class="subtitle">Thêm thông tin cho phần nhận diện hoặc bộ thủ để dễ dàng gom nhóm các từ Kanji.</p>
+                    <form id="add-group-form">
+                        <div class="form-group">
+                            <label for="group-name-input">Tên Nhóm / Phần nhận diện (VD: 家)</label>
+                            <input type="text" id="group-name-input" placeholder="Nhập phần nhận diện..." required autocomplete="off">
+                        </div>
+                        <div class="practice-row">
+                            <div class="form-group">
+                                <label for="group-phonetic-input">Phiên âm tiếng Hán (VD: Gia)</label>
+                                <input type="text" id="group-phonetic-input" placeholder="Âm Hán Việt" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="group-meaning-input">Nghĩa tiếng Việt (VD: Nhà)</label>
+                                <input type="text" id="group-meaning-input" placeholder="Nghĩa của phần nhận diện" autocomplete="off">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Tạo Nhóm</button>
+                    </form>
+                    <div id="add-group-success-msg" class="alert success hidden">Đã tạo nhóm thành công!</div>
+                </div>
+
+                <div class="card">
+                    <h2>Danh sách các nhóm</h2>
+                    <div id="groups-list" class="groups-grid mt-4">
+                        <!-- Danh sách nhóm sẽ được render ở đây -->
+                    </div>
+                </div>
+            </section>
+
             <!-- Add Word Section -->
             <section id="add-word" class="page-section">
                 <div class="card form-card">
                     <h2>Thêm từ vựng mới</h2>
-                    <p class="subtitle">Nhập phần nhận diện chung để gom nhóm, sau đó nhập từ ghép và nghĩa.</p>
+                    <p class="subtitle">Nhập phần nhận diện chung để gom nhóm, sau đó nhập từ ghép, romaji và nghĩa.</p>
                     
                     <form id="add-word-form">
                         <div class="form-group">
@@ -86,12 +121,17 @@
 
                         <div class="form-group">
                             <label for="kanji-input">Từ Kanji hoàn chỉnh</label>
-                            <input type="text" id="kanji-input" placeholder="VD: 家族" required>
+                            <input type="text" id="kanji-input" placeholder="VD: 家族" required autocomplete="off">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="romaji-input">Phiên âm Romaji</label>
+                            <input type="text" id="romaji-input" placeholder="VD: kazoku" required autocomplete="off">
                         </div>
 
                         <div class="form-group">
                             <label for="meaning-input">Nghĩa tiếng Việt</label>
-                            <input type="text" id="meaning-input" placeholder="VD: Gia đình" required>
+                            <input type="text" id="meaning-input" placeholder="VD: Gia đình" required autocomplete="off">
                         </div>
 
                         <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Lưu từ vựng</button>
@@ -104,34 +144,55 @@
             <section id="practice" class="page-section">
                 <div id="practice-setup">
                     <div class="card text-center">
-                        <h2>Luyện tập hàng ngày</h2>
-                        <p>Hệ thống sẽ chọn ra ngẫu nhiên tối đa 5 nhóm phần nhận diện bạn đã lưu để ôn tập.</p>
-                        <button id="btn-start-practice" class="btn btn-primary btn-large mt-4">Bắt đầu ngay</button>
+                        <h2>Luyện tập Kanji</h2>
+                        <p>Bạn có thể ôn tập toàn diện 5 nhóm ngẫu nhiên mỗi ngày.</p>
+                        <button id="btn-start-practice" class="btn btn-primary btn-large mt-4">Bắt đầu 5 Nhóm Ngẫu Nhiên</button>
                     </div>
                 </div>
 
                 <div id="practice-active" class="hidden">
                     <div class="practice-header">
                         <h2 id="practice-component-display" class="kanji-large">家</h2>
-                        <p>Hãy liệt kê tất cả các từ Kanji và nghĩa thuộc phần nhận diện này.</p>
-                        <div class="progress-bar">
-                            <div class="progress-fill" id="practice-progress"></div>
+                        <p class="text-muted" id="practice-component-details">Phiên âm: Gia | Nghĩa: Nhà</p>
+                        <p class="mt-3 font-semibold">Hãy liệt kê TẤT CẢ các từ vựng bạn nhớ thuộc nhóm này.</p>
+                        
+                        <div id="practice-progress-container" class="progress-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="practice-progress"></div>
+                            </div>
+                            <p class="progress-text"><span id="current-group-index">1</span> / <span id="total-groups-index">5</span> nhóm</p>
                         </div>
-                        <p class="progress-text"><span id="current-group-index">1</span> / <span id="total-groups-index">5</span> nhóm</p>
                     </div>
 
                     <div class="card practice-input-card">
                         <form id="practice-form">
-                            <div id="practice-inputs-container">
-                                <!-- Inputs will be generated here dynamically based on the number of words in the group -->
+                            <div class="practice-labels">
+                                <div>Kanji</div>
+                                <div>Romaji</div>
+                                <div>Nghĩa</div>
+                                <div></div>
                             </div>
+                            <div id="practice-inputs-container">
+                                <!-- Inputs will be generated here dynamically -->
+                            </div>
+                            
+                            <div class="mt-3 mb-4">
+                                <button type="button" id="btn-add-practice-row" class="btn btn-secondary btn-small">
+                                    <i class="ph ph-plus"></i> Thêm ô nhập
+                                </button>
+                            </div>
+
                             <div class="practice-actions">
-                                <button type="submit" class="btn btn-primary">Kiểm tra</button>
-                                <button type="button" id="btn-skip-group" class="btn btn-secondary">Bỏ qua</button>
+                                <button type="submit" class="btn btn-primary">Kiểm tra kết quả</button>
+                                <button type="button" id="btn-skip-group" class="btn btn-secondary text-danger">Bỏ qua nhóm này</button>
                             </div>
                         </form>
+                        
                         <div id="practice-feedback" class="feedback-area hidden"></div>
-                        <button id="btn-next-group" class="btn btn-primary hidden w-100 mt-3">Tiếp tục <i class="ph ph-arrow-right"></i></button>
+                        
+                        <button id="btn-next-group" class="btn btn-primary hidden w-100 mt-4 btn-large">
+                            Chuyển sang nhóm tiếp theo <i class="ph ph-arrow-right"></i>
+                        </button>
                     </div>
                 </div>
                 
@@ -139,8 +200,11 @@
                     <div class="card text-center">
                         <div class="success-icon-large"><i class="ph-fill ph-check-circle"></i></div>
                         <h2>Hoàn thành xuất sắc!</h2>
-                        <p>Bạn đã hoàn thành bài ôn tập ngày hôm nay.</p>
-                        <button id="btn-back-home" class="btn btn-secondary mt-4">Về trang chủ</button>
+                        <p>Bạn đã kết thúc bài ôn tập nhóm từ.</p>
+                        <div class="mt-4 flex-center gap-3">
+                            <button id="btn-retry-practice" class="btn btn-primary"><i class="ph ph-arrows-clockwise"></i> Luyện tập lại</button>
+                            <button id="btn-back-home" class="btn btn-secondary">Về trang chủ</button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -149,7 +213,8 @@
             <section id="dictionary" class="page-section">
                 <div class="card">
                     <div class="dict-header">
-                        <h2>Từ điển của bạn</h2>
+                        <h2 id="dict-title">Từ điển của bạn</h2>
+                        <button id="btn-clear-dict-filter" class="btn btn-secondary btn-small hidden"><i class="ph ph-x"></i> Hủy Lọc</button>
                         <div class="search-box">
                             <i class="ph ph-magnifying-glass"></i>
                             <input type="text" id="search-dict" placeholder="Tìm kiếm từ hoặc nghĩa...">
