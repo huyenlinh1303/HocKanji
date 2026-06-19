@@ -11,6 +11,44 @@ let appData = {
 
 let practiceMode = 'daily'; // 'daily' or 'single'
 
+// Inject Modal CSS dynamically to prevent browser CSS caching issues
+const modalCSS = `
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.3s;
+}
+.modal-content {
+    width: 100%;
+    max-width: 500px;
+    margin: 20px;
+    padding: 32px;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.btn-close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+.btn-close-modal:hover { color: var(--danger); }
+`;
+const styleSheet = document.createElement("style");
+styleSheet.innerText = modalCSS;
+document.head.appendChild(styleSheet);
+
 // Load data from localStorage
 function loadData() {
     const saved = localStorage.getItem("appData");
