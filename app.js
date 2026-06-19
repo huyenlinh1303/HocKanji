@@ -88,6 +88,14 @@ document.getElementById('card-groups').addEventListener('click', () => {
     navigateTo('groups');
 });
 
+document.getElementById('card-total-words').addEventListener('click', () => {
+    navigateTo('dictionary');
+});
+
+document.getElementById('card-practiced-today').addEventListener('click', () => {
+    navigateTo('practice');
+});
+
 // === GROUPS MANAGEMENT ===
 document.getElementById('add-group-form').addEventListener('submit', (e) => {
     e.preventDefault();
