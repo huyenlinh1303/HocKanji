@@ -380,6 +380,24 @@ document.addEventListener('click', (e) => {
     if (e.target !== componentInput) suggestionsList.classList.add('hidden');
 });
 
+let currentSelectedImageBase64 = null;
+document.getElementById('image-input')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentSelectedImageBase64 = e.target.result;
+            document.getElementById('image-preview').style.display = 'block';
+            document.getElementById('image-preview-img').src = currentSelectedImageBase64;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        currentSelectedImageBase64 = null;
+        document.getElementById('image-preview').style.display = 'none';
+        document.getElementById('image-preview-img').src = '';
+    }
+});
+
 addWordForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const compName = document.getElementById('component-input').value.trim();
@@ -400,12 +418,16 @@ addWordForm.addEventListener('submit', (e) => {
         componentId: comp.id,
         kanji,
         romaji,
-        meaning
+        meaning,
+        image: currentSelectedImageBase64
     });
 
     saveData();
 
     addWordForm.reset();
+    currentSelectedImageBase64 = null;
+    document.getElementById('image-preview').style.display = 'none';
+    document.getElementById('image-preview-img').src = '';
     const msg = document.getElementById('add-success-msg');
     msg.classList.remove('hidden');
     setTimeout(() => msg.classList.add('hidden'), 3000);
@@ -466,7 +488,7 @@ function renderDictionary() {
                 </div>
                 <div class="dict-words">
                     ${filteredWords.map(w => `
-                        <div class="dict-word-card">
+                        <div class="dict-word-card" style="cursor: pointer;" onclick="openWordDetailModal('${w.id}')">
                             <div class="dict-kanji">${w.kanji}</div>
                             <div class="dict-romaji">${w.romaji}</div>
                             <div class="dict-meaning">${w.meaning}</div>
@@ -487,6 +509,31 @@ document.getElementById('search-dict').addEventListener('input', () => {
         document.getElementById('btn-clear-dict-filter').classList.remove('hidden');
     }
     renderDictionary();
+});
+
+window.openWordDetailModal = function(wordId) {
+    const w = appData.words.find(x => x.id === wordId);
+    if (!w) return;
+    const c = appData.components.find(x => x.id === w.componentId);
+
+    let html = `
+        <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--primary);">${w.kanji}</h1>
+        <p style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">${w.romaji}</p>
+        <p style="font-size: 1.1rem; margin-bottom: 20px;">${w.meaning}</p>
+        ${w.image ? `<img src="${w.image}" style="max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />` : ''}
+        <div style="background: var(--bg-color); padding: 15px; border-radius: 8px; text-align: left; margin-top: 10px;">
+            <p style="margin-bottom: 5px;"><strong>Nhóm/Phần nhận diện:</strong> ${c ? c.name : '--'}</p>
+            <p style="margin-bottom: 5px; font-size: 0.95em;" class="text-muted">Âm Hán: ${c ? (c.phonetic || '--') : '--'}</p>
+            <p style="margin-bottom: 5px; font-size: 0.95em;" class="text-muted">Romaji nhóm: ${c ? (c.romaji || '--') : '--'}</p>
+            <p style="font-size: 0.95em;" class="text-muted">Nghĩa nhóm: ${c ? (c.meaning || '--') : '--'}</p>
+        </div>
+    `;
+    document.getElementById('word-detail-content').innerHTML = html;
+    document.getElementById('word-detail-modal').classList.remove('hidden');
+};
+
+document.getElementById('btn-close-word-modal')?.addEventListener('click', () => {
+    document.getElementById('word-detail-modal').classList.add('hidden');
 });
 
 // === PRACTICE LOGIC ===
@@ -670,6 +717,7 @@ function checkAnswers(skipped = false) {
                     <div class="feedback-content">
                         <h4>${w.kanji} <span class="text-muted" style="font-size:13px; font-weight:normal">(${w.romaji})</span></h4>
                         <p>${w.meaning}</p>
+                        ${w.image ? `<img src="${w.image}" style="max-height: 120px; border-radius: 6px; margin-top: 10px;" />` : ''}
                     </div>
                 </div>
             `;
@@ -717,6 +765,7 @@ function checkAnswers(skipped = false) {
                     <div class="feedback-content">
                         <h4>${c.actual.kanji}</h4>
                         <p>${c.actual.meaning}</p>
+                        ${c.actual.image ? `<img src="${c.actual.image}" style="max-height: 120px; border-radius: 6px; margin-top: 10px;" />` : ''}
                     </div>
                 </div>`;
         });
@@ -730,6 +779,7 @@ function checkAnswers(skipped = false) {
                     <div class="feedback-content">
                         <h4>${c.actual.kanji} <span class="text-danger" style="font-size:12px;">(Bạn nhập: ${c.user.romaji} - ${c.user.meaning})</span></h4>
                         <p>Đáp án đúng: <strong>${c.actual.romaji}</strong> - <strong>${c.actual.meaning}</strong></p>
+                        ${c.actual.image ? `<img src="${c.actual.image}" style="max-height: 120px; border-radius: 6px; margin-top: 10px;" />` : ''}
                     </div>
                 </div>`;
         });
@@ -756,6 +806,7 @@ function checkAnswers(skipped = false) {
                     <div class="feedback-content">
                         <h4>${c.kanji} <span class="text-muted" style="font-size:13px; font-weight:normal">(${c.romaji})</span></h4>
                         <p>${c.meaning}</p>
+                        ${c.image ? `<img src="${c.image}" style="max-height: 120px; border-radius: 6px; margin-top: 10px;" />` : ''}
                     </div>
                 </div>`;
         });
