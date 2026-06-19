@@ -87,12 +87,16 @@
                         </div>
                         <div class="practice-row">
                             <div class="form-group">
-                                <label for="group-phonetic-input">Phiên âm tiếng Hán (VD: Gia)</label>
+                                <label for="group-phonetic-input">Phiên âm Hán (VD: Gia)</label>
                                 <input type="text" id="group-phonetic-input" placeholder="Âm Hán Việt" autocomplete="off">
                             </div>
                             <div class="form-group">
-                                <label for="group-meaning-input">Nghĩa tiếng Việt (VD: Nhà)</label>
-                                <input type="text" id="group-meaning-input" placeholder="Nghĩa của phần nhận diện" autocomplete="off">
+                                <label for="group-romaji-input">Phiên âm Romaji (VD: ie)</label>
+                                <input type="text" id="group-romaji-input" placeholder="VD: ie, ya" autocomplete="off">
+                            </div>
+                            <div class="form-group">
+                                <label for="group-meaning-input">Nghĩa (VD: Nhà)</label>
+                                <input type="text" id="group-meaning-input" placeholder="Nghĩa nhận diện" autocomplete="off">
                             </div>
                         </div>
                         <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Tạo Nhóm</button>
@@ -231,6 +235,38 @@
         </main>
     </div>
 
-    <script src="app.js?v=2"></script>
+    <!-- Edit Group Modal -->
+    <div id="edit-group-modal" class="modal hidden">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <h2>Sửa thông tin nhóm</h2>
+                <button class="btn-close-modal" id="btn-close-edit-modal"><i class="ph ph-x"></i></button>
+            </div>
+            <form id="edit-group-form" class="mt-4">
+                <input type="hidden" id="edit-group-id">
+                <div class="form-group">
+                    <label for="edit-group-name">Tên Nhóm / Phần nhận diện</label>
+                    <input type="text" id="edit-group-name" readonly style="background: var(--bg-color); cursor: not-allowed;">
+                </div>
+                <div class="form-group">
+                    <label for="edit-group-phonetic">Phiên âm Hán Việt</label>
+                    <input type="text" id="edit-group-phonetic" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-group-romaji">Phiên âm Romaji</label>
+                    <input type="text" id="edit-group-romaji" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-group-meaning">Nghĩa tiếng Việt</label>
+                    <input type="text" id="edit-group-meaning" autocomplete="off">
+                </div>
+                <div class="mt-4" style="text-align: right;">
+                    <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js?v=3"></script>
 </body>
 </html>
