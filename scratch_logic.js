@@ -369,5 +369,4 @@ window.openWeeklyTaskModal = function() {
     saveData();
 }
 
-// === INIT ===
-document.querySelectorAll('.nav-links a').forEach(link => {
+// End of scratch logic
