@@ -1051,26 +1051,93 @@ document.getElementById('speaking-form').addEventListener('submit', (e) => {
         id: generateId(),
         date: today,
         text: text,
-        image: currentSpeakingImageBase64
+        image: currentSpeakingImageBase64,
+        practiceCount: 0
     });
     saveData();
     
-    renderSpeakingView();
+    alert('Lưu bài nói thành công!');
+    e.target.reset();
+    currentSpeakingImageBase64 = null;
+    document.getElementById('speaking-image-preview').style.display = 'none';
+    document.getElementById('speaking-image-preview-img').src = '';
+    
+    switchSpeakingTab('speaking-gallery');
 });
 
-function renderSpeakingView() {
-    const today = new Date().toDateString();
-    const todaysLog = appData.speakingLogs.find(l => new Date(l.date).toDateString() === today);
+let currentPracticeSpeakingId = null;
+let currentSpeakingRetryCount = 0;
+
+window.switchSpeakingTab = function(tabId) {
+    document.querySelectorAll('.speaking-tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
     
-    if (todaysLog) {
-        document.getElementById('speaking-form').parentElement.style.display = 'none';
-        document.getElementById('speaking-practice-area').style.display = 'block';
-        document.getElementById('practice-mindmap-img').src = todaysLog.image;
-        document.getElementById('speaking-result-text').textContent = todaysLog.text;
-    } else {
-        document.getElementById('speaking-form').parentElement.style.display = 'block';
-        document.getElementById('speaking-practice-area').style.display = 'none';
+    document.querySelectorAll('#speaking-tab-buttons button').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+    });
+    const eventBtn = event ? event.currentTarget : document.querySelector(`[onclick="switchSpeakingTab('${tabId}')"]`);
+    if(eventBtn) {
+        eventBtn.classList.remove('btn-secondary');
+        eventBtn.classList.add('btn-primary');
     }
+    
+    if (tabId === 'speaking-gallery') renderSpeakingGallery();
+}
+
+function renderSpeakingGallery() {
+    const grid = document.getElementById('speaking-logs-grid');
+    grid.innerHTML = '';
+    
+    if (appData.speakingLogs.length === 0) {
+        grid.innerHTML = '<p class="text-muted" style="grid-column: 1/-1; text-align: center;">Chưa có bài nói nào được lưu.</p>';
+        return;
+    }
+    
+    appData.speakingLogs.forEach((log, index) => {
+        grid.innerHTML += `
+            <div class="stat-card clickable" style="flex-direction: column; align-items: stretch; text-align: center; padding: 16px;" onclick="openSpeakingPractice('${log.id}')">
+                <img src="${log.image}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; box-shadow: var(--shadow-sm);" />
+                <h3 style="margin-bottom: 4px;">Ngày ${index + 1} (${log.date})</h3>
+                <p class="text-muted" style="font-size: 0.9rem;">Đã luyện lại: ${log.practiceCount || 0} lần</p>
+            </div>
+        `;
+    });
+}
+
+window.openSpeakingPractice = function(logId) {
+    const log = appData.speakingLogs.find(l => l.id === logId);
+    if (!log) return;
+    
+    currentPracticeSpeakingId = logId;
+    currentSpeakingRetryCount = 0;
+    
+    document.getElementById('speaking-gallery').classList.add('hidden');
+    document.getElementById('speaking-add').classList.add('hidden');
+    document.getElementById('speaking-tab-buttons').classList.add('hidden');
+    document.getElementById('speaking-practice-area').classList.remove('hidden');
+    
+    document.getElementById('practice-mindmap-img').src = log.image;
+    document.getElementById('speaking-result-text').textContent = log.text;
+    document.getElementById('speaking-result-text').classList.add('hidden');
+    
+    // Reset buttons
+    document.getElementById('btn-start-speaking').classList.remove('hidden');
+    document.getElementById('btn-retry-speaking').classList.add('hidden');
+    document.getElementById('btn-finish-speaking').classList.add('hidden');
+    document.getElementById('btn-finish-speaking').disabled = false;
+    document.getElementById('btn-finish-speaking').innerHTML = '<i class="ph ph-check-circle"></i> Đã mượt';
+    
+    speakingTimeLeft = 120;
+    updateSpeakingTimerDisplay();
+    clearInterval(speakingTimerInterval);
+}
+
+window.closeSpeakingPractice = function() {
+    document.getElementById('speaking-practice-area').classList.add('hidden');
+    document.getElementById('speaking-tab-buttons').classList.remove('hidden');
+    clearInterval(speakingTimerInterval);
+    switchSpeakingTab('speaking-gallery');
 }
 
 function updateSpeakingTimerDisplay() {
@@ -1083,6 +1150,7 @@ document.getElementById('btn-start-speaking').addEventListener('click', () => {
     document.getElementById('btn-start-speaking').classList.add('hidden');
     document.getElementById('btn-retry-speaking').classList.remove('hidden');
     document.getElementById('btn-finish-speaking').classList.remove('hidden');
+    
     speakingTimeLeft = 120;
     updateSpeakingTimerDisplay();
     clearInterval(speakingTimerInterval);
@@ -1096,16 +1164,28 @@ document.getElementById('btn-start-speaking').addEventListener('click', () => {
 });
 
 document.getElementById('btn-retry-speaking').addEventListener('click', () => {
+    currentSpeakingRetryCount++;
+    const log = appData.speakingLogs.find(l => l.id === currentPracticeSpeakingId);
+    if(log) {
+        log.practiceCount = (log.practiceCount || 0) + 1;
+        saveData();
+    }
+    
+    // Reset buttons and timer just like start
+    document.getElementById('btn-start-speaking').classList.remove('hidden');
+    document.getElementById('btn-retry-speaking').classList.add('hidden');
+    document.getElementById('btn-finish-speaking').classList.add('hidden');
+    document.getElementById('btn-finish-speaking').disabled = false;
+    document.getElementById('btn-finish-speaking').innerHTML = '<i class="ph ph-check-circle"></i> Đã mượt';
+    document.getElementById('speaking-result-text').classList.add('hidden');
+    
     speakingTimeLeft = 120;
     updateSpeakingTimerDisplay();
     clearInterval(speakingTimerInterval);
-    speakingTimerInterval = setInterval(() => {
-        speakingTimeLeft--;
-        updateSpeakingTimerDisplay();
-        if (speakingTimeLeft <= 0) {
-            clearInterval(speakingTimerInterval);
-        }
-    }, 1000);
+    
+    if (currentSpeakingRetryCount >= 3) {
+        document.getElementById('speaking-result-text').classList.remove('hidden');
+    }
 });
 
 document.getElementById('btn-finish-speaking').addEventListener('click', () => {
@@ -1362,6 +1442,8 @@ document.querySelectorAll('.nav-links a').forEach(link => {
 loadData();
 checkDailyStatus();
 if(appData.speakingLogs.length > 0) {
-    renderSpeakingView();
+    switchSpeakingTab('speaking-gallery');
+} else {
+    switchSpeakingTab('speaking-add');
 }
 navigateTo('dashboard');
