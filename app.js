@@ -90,12 +90,14 @@ function generateId() {
 }
 
 // === NAVIGATION ===
-const pages = ['dashboard', 'groups', 'add-word', 'practice', 'dictionary'];
+const pages = ['dashboard', 'groups', 'add-word', 'practice', 'speaking', 'grammar', 'dictionary'];
 const pageTitles = {
     'dashboard': 'Tổng quan',
     'groups': 'Quản lý Nhóm',
     'add-word': 'Thêm từ mới',
     'practice': 'Luyện tập',
+    'speaking': 'Luyện nói',
+    'grammar': 'Ngữ pháp',
     'dictionary': 'Từ điển'
 };
 
