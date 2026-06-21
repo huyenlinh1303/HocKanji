@@ -25,6 +25,8 @@
                 <li><a href="#" data-target="groups"><i class="ph ph-folders"></i> Quản lý Nhóm</a></li>
                 <li><a href="#" data-target="add-word"><i class="ph ph-plus-circle"></i> Thêm từ mới</a></li>
                 <li><a href="#" data-target="practice"><i class="ph ph-brain"></i> Luyện tập</a></li>
+                <li><a href="#" data-target="speaking"><i class="ph ph-microphone"></i> Luyện nói</a></li>
+                <li><a href="#" data-target="grammar"><i class="ph ph-text-aa"></i> Ngữ pháp</a></li>
                 <li><a href="#" data-target="dictionary"><i class="ph ph-books"></i> Từ điển</a></li>
             </ul>
         </nav>
@@ -41,6 +43,12 @@
 
             <!-- Dashboard Section -->
             <section id="dashboard" class="page-section active">
+                <div id="punishment-banner" class="alert danger hidden mb-4">
+                    <strong>⚠️ Cảnh báo Hình Phạt!</strong> Bạn đã bỏ lỡ việc luyện nói ngày hôm qua. Hôm nay bạn bắt buộc phải luyện tập toàn bộ nhóm từ vựng từ đầu tới cuối (Số vòng: <span id="punishment-multiplier">1</span>x).
+                </div>
+                <div id="weekly-task-banner" class="alert success hidden mb-4" style="cursor: pointer;" onclick="openWeeklyTaskModal()">
+                    <strong>🎉 Nhiệm vụ tuần!</strong> Đã đến lúc ôn lại 5 mẫu ngữ pháp bạn luyện nhiều nhất tuần qua. Nhấn vào đây để làm nhiệm vụ!
+                </div>
                 <div class="stats-grid">
                     <div class="stat-card clickable" id="card-total-words" title="Nhấn để xem từ điển">
                         <div class="stat-icon"><i class="ph ph-cards"></i></div>
@@ -99,6 +107,10 @@
                                 <input type="text" id="group-meaning-input" placeholder="Nghĩa nhận diện" autocomplete="off">
                             </div>
                         </div>
+                        <div class="form-group mt-3">
+                            <label for="group-explanation-input">Lý giải Hán tự (Tùy chọn)</label>
+                            <textarea id="group-explanation-input" placeholder="Viết lý giải tại sao có chữ này..." rows="2"></textarea>
+                        </div>
                         <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Tạo Nhóm</button>
                     </form>
                     <div id="add-group-success-msg" class="alert success hidden">Đã tạo nhóm thành công!</div>
@@ -143,6 +155,11 @@
                         <div class="form-group">
                             <label for="meaning-input">Nghĩa tiếng Việt</label>
                             <input type="text" id="meaning-input" placeholder="VD: Gia đình" required autocomplete="off">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="explanation-input">Lý giải Hán tự (Tùy chọn)</label>
+                            <textarea id="explanation-input" placeholder="Viết lý giải..." rows="2"></textarea>
                         </div>
 
                         <div class="form-group">
@@ -248,6 +265,158 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Speaking Section -->
+            <section id="speaking" class="page-section">
+                <div class="card form-card mb-4">
+                    <h2>Luyện nói hàng ngày</h2>
+                    <p class="subtitle">Nhập đoạn văn giao tiếp của bạn hôm nay và upload ảnh Mind-map.</p>
+                    <form id="speaking-form">
+                        <div class="form-group">
+                            <label for="speaking-text">Đoạn văn hôm nay</label>
+                            <textarea id="speaking-text" rows="5" placeholder="Hôm nay bạn muốn nói gì? Nhập đoạn văn vào đây..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="speaking-image">Ảnh Mind-map</label>
+                            <input type="file" id="speaking-image" accept="image/*" required>
+                            <div id="speaking-image-preview" style="margin-top: 10px; display: none; text-align: center;">
+                                <img id="speaking-image-preview-img" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-check"></i> Lưu bài nói hôm nay</button>
+                    </form>
+                </div>
+                <div class="card" id="speaking-practice-area" style="display: none; text-align: center;">
+                    <h2>Ôn luyện nói</h2>
+                    <p class="subtitle">Hãy nhìn Mind-map và nói trong 2 phút.</p>
+                    <img id="practice-mindmap-img" style="max-width: 100%; max-height: 400px; border-radius: 8px; margin: 20px auto; display: block;" />
+                    
+                    <div id="speaking-timer" style="font-size: 4rem; font-weight: bold; color: var(--primary); margin: 20px 0;">02:00</div>
+                    
+                    <div class="flex-center gap-3">
+                        <button id="btn-start-speaking" class="btn btn-primary"><i class="ph ph-play"></i> Bắt đầu ôn luyện</button>
+                        <button id="btn-retry-speaking" class="btn btn-secondary hidden"><i class="ph ph-arrows-clockwise"></i> Ôn luyện lại</button>
+                        <button id="btn-finish-speaking" class="btn btn-success hidden"><i class="ph ph-check-circle"></i> Đã mượt</button>
+                    </div>
+                    
+                    <div id="speaking-result-text" class="hidden mt-4" style="background: var(--bg-color); padding: 20px; border-radius: 8px; text-align: left; font-size: 1.1rem; line-height: 1.6;">
+                        <!-- Text injected here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Grammar Section -->
+            <section id="grammar" class="page-section">
+                <div class="grammar-tabs flex gap-2 mb-4" id="grammar-tab-buttons">
+                    <button class="btn btn-primary" onclick="switchGrammarTab('grammar-add')">Nhập ngữ pháp</button>
+                    <button class="btn btn-secondary" onclick="switchGrammarTab('grammar-group')">Tạo nhóm</button>
+                    <button class="btn btn-secondary" onclick="switchGrammarTab('grammar-list')">Bảng tổng hợp</button>
+                    <button class="btn btn-secondary" onclick="switchGrammarTab('grammar-random')">Luyện tập random</button>
+                </div>
+
+                <div id="grammar-add" class="card form-card grammar-tab-content">
+                    <h2>Nhập ngữ pháp mới</h2>
+                    <form id="add-grammar-form">
+                        <div class="form-group">
+                            <label for="grammar-group-select">Chọn nhóm ngữ pháp</label>
+                            <select id="grammar-group-select" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="grammar-structure">Cấu trúc ngữ pháp</label>
+                            <input type="text" id="grammar-structure" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="grammar-example">Câu ví dụ</label>
+                            <input type="text" id="grammar-example" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="grammar-translation">Dịch nghĩa tiếng Việt</label>
+                            <input type="text" id="grammar-translation" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="grammar-explanation">Giải thích ngữ pháp (Tùy chọn)</label>
+                            <textarea id="grammar-explanation" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Thêm ngữ pháp</button>
+                    </form>
+                </div>
+
+                <div id="grammar-group" class="card form-card grammar-tab-content hidden">
+                    <h2>Tạo nhóm ngữ pháp</h2>
+                    <form id="add-grammar-group-form">
+                        <div class="form-group">
+                            <label for="grammar-group-name">Tên nhóm</label>
+                            <input type="text" id="grammar-group-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="grammar-group-color">Màu thẻ nhóm</label>
+                            <input type="color" id="grammar-group-color" value="#4f46e5" style="width: 100px; height: 40px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="ph ph-plus"></i> Tạo nhóm</button>
+                    </form>
+                </div>
+
+                <div id="grammar-list" class="card grammar-tab-content hidden" style="max-width: 100%;">
+                    <h2>Bảng tổng hợp ngữ pháp</h2>
+                    <div id="grammar-groups-grid" class="groups-grid mt-4">
+                        <!-- Grammar groups injected here -->
+                    </div>
+                    <div id="grammar-items-table-container" class="mt-4 hidden">
+                        <button class="btn btn-secondary btn-small mb-2" onclick="closeGrammarTable()"><i class="ph ph-arrow-left"></i> Quay lại</button>
+                        <h3 id="grammar-table-title" class="mb-3"></h3>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; text-align: left; border-collapse: collapse; min-width: 800px;">
+                                <thead>
+                                    <tr style="border-bottom: 2px solid var(--border-color);">
+                                        <th style="padding: 10px;">STT</th>
+                                        <th style="padding: 10px;">Cấu trúc</th>
+                                        <th style="padding: 10px;">Ví dụ</th>
+                                        <th style="padding: 10px;">Nghĩa</th>
+                                        <th style="padding: 10px;">Giải thích</th>
+                                        <th style="padding: 10px;">Lần luyện</th>
+                                        <th style="padding: 10px;">Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="grammar-items-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div id="single-grammar-practice" class="mt-4 hidden">
+                        <button class="btn btn-secondary btn-small mb-2" onclick="closeSingleGrammarPractice()"><i class="ph ph-arrow-left"></i> Quay lại</button>
+                        <h3>Luyện tập mẫu câu: <span id="sgp-structure" style="color: var(--primary);"></span></h3>
+                        <p class="text-muted">Viết 5 câu ví dụ sử dụng mẫu ngữ pháp này với 5 từ vựng ngẫu nhiên sau đây.</p>
+                        <form id="sgp-form" class="mt-4">
+                            <div id="sgp-words-container" class="groups-grid" style="margin-bottom: 20px;"></div>
+                            <div id="sgp-inputs-container"></div>
+                            <button type="submit" class="btn btn-primary mt-4 w-100">Hoàn thành bài luyện tập</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="grammar-random" class="card grammar-tab-content hidden">
+                    <h2>Luyện tập ngẫu nhiên</h2>
+                    <p class="text-muted">Viết đoạn văn sử dụng 5 mẫu ngữ pháp và 5 từ vựng ngẫu nhiên sau.</p>
+                    <button class="btn btn-secondary mt-2 mb-4" onclick="loadRandomGrammarPractice()"><i class="ph ph-arrows-clockwise"></i> Random lại</button>
+                    
+                    <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <h4>5 Ngữ pháp</h4>
+                            <ul id="random-grammars-list" style="list-style-type: disc; margin-left: 20px; line-height: 1.8;"></ul>
+                        </div>
+                        <div style="flex: 1; min-width: 300px;">
+                            <h4>5 Từ vựng</h4>
+                            <div id="random-words-grid" class="groups-grid" style="grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;"></div>
+                        </div>
+                    </div>
+                    
+                    <form id="random-grammar-form" class="mt-4">
+                        <textarea id="random-grammar-text" rows="5" placeholder="Viết đoạn văn của bạn vào đây..." required></textarea>
+                        <button type="submit" class="btn btn-primary mt-3 w-100">Nộp bài</button>
+                    </form>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -275,6 +444,10 @@
                 <div class="form-group">
                     <label for="edit-group-meaning">Nghĩa tiếng Việt</label>
                     <input type="text" id="edit-group-meaning" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="edit-group-explanation">Lý giải Hán tự (Tùy chọn)</label>
+                    <textarea id="edit-group-explanation" rows="3"></textarea>
                 </div>
                 <div class="mt-4" style="text-align: right;">
                     <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
@@ -324,6 +497,11 @@
                 <div class="form-group">
                     <label for="edit-word-meaning">Nghĩa tiếng Việt</label>
                     <input type="text" id="edit-word-meaning" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="edit-word-explanation">Lý giải Hán tự (Tùy chọn)</label>
+                    <textarea id="edit-word-explanation" rows="3"></textarea>
                 </div>
                 
                 <div class="form-group">
