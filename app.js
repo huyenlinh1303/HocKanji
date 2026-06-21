@@ -1,12 +1,17 @@
 // === STATE MANAGEMENT ===
 let appData = {
-    components: [], // { id, name, phonetic, romaji, meaning }
-    words: [],      // { id, componentId, kanji, romaji, meaning }
+    components: [], // { id, name, phonetic, romaji, meaning, explanation }
+    words: [],      // { id, componentId, kanji, phonetic, romaji, meaning, image, explanation }
     practiceState: {
         lastDate: null,
         dailyComponentIds: [], 
         completed: false
-    }
+    },
+    speakingLogs: [],
+    grammarGroups: [],
+    grammars: [],
+    punishmentState: { active: false, multiplier: 1 },
+    weeklyGrammarTask: { lastCompletedDate: null }
 };
 
 let practiceMode = 'daily'; // 'daily' or 'single'
@@ -54,14 +59,22 @@ function loadData() {
     const saved = localStorage.getItem("appData");
     if (saved) {
         appData = JSON.parse(saved);
+        if(!appData.speakingLogs) appData.speakingLogs = [];
+        if(!appData.grammarGroups) appData.grammarGroups = [];
+        if(!appData.grammars) appData.grammars = [];
+        if(!appData.punishmentState) appData.punishmentState = { active: false, multiplier: 1 };
+        if(!appData.weeklyGrammarTask) appData.weeklyGrammarTask = { lastCompletedDate: null };
         // Ensure backwards compatibility
         appData.components.forEach(c => {
             if (c.phonetic === undefined) c.phonetic = '';
             if (c.meaning === undefined) c.meaning = '';
             if (c.romaji === undefined) c.romaji = '';
+            if (c.explanation === undefined) c.explanation = '';
         });
         appData.words.forEach(w => {
             if (w.romaji === undefined) w.romaji = '';
+            if (w.phonetic === undefined) w.phonetic = '';
+            if (w.explanation === undefined) w.explanation = '';
         });
     }
 }
@@ -142,6 +155,7 @@ document.getElementById('add-group-form').addEventListener('submit', (e) => {
     const phonetic = document.getElementById('group-phonetic-input').value.trim();
     const romaji = document.getElementById('group-romaji-input').value.trim();
     const meaning = document.getElementById('group-meaning-input').value.trim();
+    const explanation = document.getElementById('group-explanation-input')?.value.trim() || '';
 
     if (!name) return;
 
@@ -151,13 +165,15 @@ document.getElementById('add-group-form').addEventListener('submit', (e) => {
         comp.phonetic = phonetic;
         comp.romaji = romaji;
         comp.meaning = meaning;
+        comp.explanation = explanation;
     } else {
         appData.components.push({
             id: generateId(),
             name,
             phonetic,
             romaji,
-            meaning
+            meaning,
+            explanation
         });
     }
 
@@ -190,6 +206,7 @@ function renderGroups() {
                         <div class="group-item-phonetic">Âm: ${comp.phonetic || '--'}</div>
                         <div class="group-item-phonetic">Romaji: ${comp.romaji || '--'}</div>
                         <div class="group-item-meaning">Nghĩa: ${comp.meaning || '--'}</div>
+                        ${comp.explanation ? `<div class="group-item-meaning text-muted" style="margin-top: 4px; font-style: italic;">Lý giải: ${comp.explanation}</div>` : ''}
                         <div class="text-muted" style="font-size: 13px; margin-top: 4px;">${wordCount} từ vựng</div>
                     </div>
                 </div>
@@ -265,6 +282,7 @@ window.openEditGroupModal = function(id) {
                 editComp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
                 editComp.romaji = document.getElementById('edit-group-romaji').value.trim();
                 editComp.meaning = document.getElementById('edit-group-meaning').value.trim();
+                editComp.explanation = document.getElementById('edit-group-explanation').value.trim();
                 saveData();
                 renderGroups();
                 document.getElementById('edit-group-modal').classList.add('hidden');
@@ -277,6 +295,7 @@ window.openEditGroupModal = function(id) {
     document.getElementById('edit-group-phonetic').value = comp.phonetic || '';
     document.getElementById('edit-group-romaji').value = comp.romaji || '';
     document.getElementById('edit-group-meaning').value = comp.meaning || '';
+    document.getElementById('edit-group-explanation').value = comp.explanation || '';
     
     document.getElementById('edit-group-modal').classList.remove('hidden');
 };
@@ -300,6 +319,7 @@ if(editForm) {
             comp.phonetic = document.getElementById('edit-group-phonetic').value.trim();
             comp.romaji = document.getElementById('edit-group-romaji').value.trim();
             comp.meaning = document.getElementById('edit-group-meaning').value.trim();
+            comp.explanation = document.getElementById('edit-group-explanation').value.trim();
             saveData();
             renderGroups();
             document.getElementById('edit-group-modal').classList.add('hidden');
@@ -402,14 +422,16 @@ addWordForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const compName = document.getElementById('component-input').value.trim();
     const kanji = document.getElementById('kanji-input').value.trim();
+    const phonetic = document.getElementById('phonetic-input').value.trim();
     const romaji = document.getElementById('romaji-input').value.trim();
     const meaning = document.getElementById('meaning-input').value.trim();
+    const explanation = document.getElementById('explanation-input')?.value.trim() || '';
 
     if (!compName || !kanji || !romaji || !meaning) return;
 
     let comp = appData.components.find(c => c.name === compName);
     if (!comp) {
-        comp = { id: generateId(), name: compName, phonetic: '', romaji: '', meaning: '' };
+        comp = { id: generateId(), name: compName, phonetic: '', romaji: '', meaning: '', explanation: '' };
         appData.components.push(comp);
     }
 
@@ -417,8 +439,10 @@ addWordForm.addEventListener('submit', (e) => {
         id: generateId(),
         componentId: comp.id,
         kanji,
+        phonetic,
         romaji,
         meaning,
+        explanation,
         image: currentSelectedImageBase64
     });
 
@@ -491,8 +515,10 @@ function renderDictionary() {
                         <div class="dict-word-card" style="cursor: pointer; position: relative;" onclick="openWordDetailModal('${w.id}')">
                             ${w.image ? `<img src="${w.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
                             <div class="dict-kanji">${w.kanji}</div>
+                            ${w.phonetic ? `<div class="dict-phonetic" style="font-size: 0.9em; color: var(--text-muted); margin-top: 2px;">[${w.phonetic}]</div>` : ''}
                             <div class="dict-romaji">${w.romaji}</div>
                             <div class="dict-meaning">${w.meaning}</div>
+                            ${w.explanation ? `<div class="dict-meaning text-muted" style="margin-top: 4px; font-style: italic; font-size: 0.85em;">Lý giải: ${w.explanation}</div>` : ''}
                             <button class="btn-edit-word" onclick="event.stopPropagation(); openEditWordModal('${w.id}')" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
                                 <i class="ph ph-pencil"></i>
                             </button>
@@ -522,8 +548,10 @@ window.openWordDetailModal = function(wordId) {
 
     let html = `
         <h1 style="font-size: 3rem; margin-bottom: 10px; color: var(--primary);">${w.kanji}</h1>
+        ${w.phonetic ? `<p style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; color: var(--text-main);">Âm Hán: ${w.phonetic}</p>` : ''}
         <p style="font-size: 1.2rem; font-weight: bold; margin-bottom: 5px;">${w.romaji}</p>
         <p style="font-size: 1.1rem; margin-bottom: 20px;">${w.meaning}</p>
+        ${w.explanation ? `<p style="font-size: 0.95rem; font-style: italic; color: var(--text-muted); margin-bottom: 15px; text-align: left; background: var(--bg-color); padding: 10px; border-radius: 4px;">Lý giải: ${w.explanation}</p>` : ''}
         ${w.image ? `<img src="${w.image}" style="max-width: 100%; max-height: 250px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />` : ''}
         <div style="background: var(--bg-color); padding: 15px; border-radius: 8px; text-align: left; margin-top: 10px;">
             <p style="margin-bottom: 5px;"><strong>Nhóm/Phần nhận diện:</strong> ${c ? c.name : '--'}</p>
@@ -547,8 +575,10 @@ window.openEditWordModal = function(wordId) {
 
     document.getElementById('edit-word-id').value = w.id;
     document.getElementById('edit-word-kanji').value = w.kanji;
+    document.getElementById('edit-word-phonetic').value = w.phonetic || '';
     document.getElementById('edit-word-romaji').value = w.romaji;
     document.getElementById('edit-word-meaning').value = w.meaning;
+    document.getElementById('edit-word-explanation').value = w.explanation || '';
     
     currentEditWordImageBase64 = w.image || null;
     const previewDiv = document.getElementById('edit-word-image-preview');
@@ -594,8 +624,10 @@ document.getElementById('edit-word-form')?.addEventListener('submit', (e) => {
     const w = appData.words.find(x => x.id === id);
     if (w) {
         w.kanji = document.getElementById('edit-word-kanji').value.trim();
+        w.phonetic = document.getElementById('edit-word-phonetic').value.trim();
         w.romaji = document.getElementById('edit-word-romaji').value.trim();
         w.meaning = document.getElementById('edit-word-meaning').value.trim();
+        w.explanation = document.getElementById('edit-word-explanation')?.value.trim() || '';
         w.image = currentEditWordImageBase64;
         saveData();
         renderDictionary();
@@ -609,8 +641,17 @@ let currentPracticeComponent = null;
 
 function generateRandomGroups() {
     const validComponents = appData.components.filter(c => appData.words.some(w => w.componentId === c.id));
-    const shuffled = validComponents.sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 5).map(c => c.id);
+    if (appData.punishmentState && appData.punishmentState.active) {
+        let result = [];
+        for (let i = 0; i < appData.punishmentState.multiplier; i++) {
+            const shuffled = [...validComponents].sort(() => 0.5 - Math.random());
+            result = result.concat(shuffled.map(c => c.id));
+        }
+        return result;
+    } else {
+        const shuffled = validComponents.sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, 5).map(c => c.id);
+    }
 }
 
 function initPracticeView() {
@@ -623,8 +664,15 @@ function initPracticeView() {
         return;
     }
 
-    const count = Math.min(5, validComponents.length);
-    document.getElementById('btn-start-practice').textContent = `Bắt đầu Luyện Tập (${count} Nhóm Ngẫu Nhiên)`;
+    if (appData.punishmentState && appData.punishmentState.active) {
+        const totalRounds = validComponents.length * appData.punishmentState.multiplier;
+        document.getElementById('btn-start-practice').textContent = `Chấp nhận Hình Phạt (${totalRounds} Nhóm ngẫu nhiên)`;
+        document.getElementById('btn-start-practice').style.backgroundColor = 'var(--danger)';
+    } else {
+        const count = Math.min(5, validComponents.length);
+        document.getElementById('btn-start-practice').textContent = `Bắt đầu Luyện Tập (${count} Nhóm Ngẫu Nhiên)`;
+        document.getElementById('btn-start-practice').style.backgroundColor = 'var(--primary)';
+    }
 
     if (appData.practiceState.completed) {
         showPracticeSummary();
@@ -705,6 +753,10 @@ function renderPracticeStep() {
     if (currentPracticeIndex >= appData.practiceState.dailyComponentIds.length) {
         if(practiceMode === 'daily') {
             appData.practiceState.completed = true;
+            if (appData.punishmentState && appData.punishmentState.active) {
+                appData.punishmentState.active = false;
+                appData.punishmentState.multiplier = 1;
+            }
             saveData();
         }
         showPracticeSummary();
@@ -925,6 +977,377 @@ document.getElementById('btn-back-home').addEventListener('click', () => {
     navigateTo('dashboard');
 });
 
+function checkDailyStatus() {
+    const today = new Date().toDateString();
+    if (appData.punishmentState.lastCheckedDate === today) return;
+    
+    if (appData.speakingLogs.length > 0) {
+        const lastLogDate = new Date(appData.speakingLogs[appData.speakingLogs.length - 1].date);
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        const isToday = lastLogDate.toDateString() === today;
+        const isYesterday = lastLogDate.toDateString() === yesterday.toDateString();
+        
+        if (!isToday && !isYesterday) {
+            if (appData.punishmentState.active) {
+                appData.punishmentState.multiplier *= 2;
+            } else {
+                appData.punishmentState.active = true;
+                appData.punishmentState.multiplier = 1;
+            }
+        }
+    }
+    
+    if (appData.weeklyGrammarTask.lastCompletedDate) {
+        const last = new Date(appData.weeklyGrammarTask.lastCompletedDate);
+        const now = new Date();
+        const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
+        if (diffDays >= 7) {
+            document.getElementById('weekly-task-banner').classList.remove('hidden');
+        }
+    } else {
+        const practicedCount = appData.grammars.filter(g => g.practiceCount > 0).length;
+        if (practicedCount >= 5) {
+             document.getElementById('weekly-task-banner').classList.remove('hidden');
+        }
+    }
+    
+    appData.punishmentState.lastCheckedDate = today;
+    saveData();
+}
+
+// === SPEAKING ===
+let currentSpeakingImageBase64 = null;
+let speakingTimerInterval = null;
+let speakingTimeLeft = 120; // 2 minutes
+
+document.getElementById('speaking-image').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            currentSpeakingImageBase64 = e.target.result;
+            document.getElementById('speaking-image-preview').style.display = 'block';
+            document.getElementById('speaking-image-preview-img').src = currentSpeakingImageBase64;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        currentSpeakingImageBase64 = null;
+        document.getElementById('speaking-image-preview').style.display = 'none';
+        document.getElementById('speaking-image-preview-img').src = '';
+    }
+});
+
+document.getElementById('speaking-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = document.getElementById('speaking-text').value.trim();
+    if (!text || !currentSpeakingImageBase64) return;
+    
+    const today = new Date().toDateString();
+    appData.speakingLogs.push({
+        id: generateId(),
+        date: today,
+        text: text,
+        image: currentSpeakingImageBase64
+    });
+    saveData();
+    
+    renderSpeakingView();
+});
+
+function renderSpeakingView() {
+    const today = new Date().toDateString();
+    const todaysLog = appData.speakingLogs.find(l => new Date(l.date).toDateString() === today);
+    
+    if (todaysLog) {
+        document.getElementById('speaking-form').parentElement.style.display = 'none';
+        document.getElementById('speaking-practice-area').style.display = 'block';
+        document.getElementById('practice-mindmap-img').src = todaysLog.image;
+        document.getElementById('speaking-result-text').textContent = todaysLog.text;
+    } else {
+        document.getElementById('speaking-form').parentElement.style.display = 'block';
+        document.getElementById('speaking-practice-area').style.display = 'none';
+    }
+}
+
+function updateSpeakingTimerDisplay() {
+    const m = Math.floor(speakingTimeLeft / 60).toString().padStart(2, '0');
+    const s = (speakingTimeLeft % 60).toString().padStart(2, '0');
+    document.getElementById('speaking-timer').textContent = `${m}:${s}`;
+}
+
+document.getElementById('btn-start-speaking').addEventListener('click', () => {
+    document.getElementById('btn-start-speaking').classList.add('hidden');
+    document.getElementById('btn-retry-speaking').classList.remove('hidden');
+    document.getElementById('btn-finish-speaking').classList.remove('hidden');
+    speakingTimeLeft = 120;
+    updateSpeakingTimerDisplay();
+    clearInterval(speakingTimerInterval);
+    speakingTimerInterval = setInterval(() => {
+        speakingTimeLeft--;
+        updateSpeakingTimerDisplay();
+        if (speakingTimeLeft <= 0) {
+            clearInterval(speakingTimerInterval);
+        }
+    }, 1000);
+});
+
+document.getElementById('btn-retry-speaking').addEventListener('click', () => {
+    speakingTimeLeft = 120;
+    updateSpeakingTimerDisplay();
+    clearInterval(speakingTimerInterval);
+    speakingTimerInterval = setInterval(() => {
+        speakingTimeLeft--;
+        updateSpeakingTimerDisplay();
+        if (speakingTimeLeft <= 0) {
+            clearInterval(speakingTimerInterval);
+        }
+    }, 1000);
+});
+
+document.getElementById('btn-finish-speaking').addEventListener('click', () => {
+    clearInterval(speakingTimerInterval);
+    document.getElementById('speaking-result-text').classList.remove('hidden');
+    document.getElementById('btn-finish-speaking').disabled = true;
+    document.getElementById('btn-finish-speaking').innerHTML = '<i class="ph ph-check"></i> Đã hoàn thành';
+});
+
+// === GRAMMAR ===
+function switchGrammarTab(tabId) {
+    document.querySelectorAll('.grammar-tab-content').forEach(el => el.classList.add('hidden'));
+    document.getElementById(tabId).classList.remove('hidden');
+    
+    document.querySelectorAll('#grammar-tab-buttons button').forEach(btn => {
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-secondary');
+    });
+    const eventBtn = event ? event.currentTarget : document.querySelector(`[onclick="switchGrammarTab('${tabId}')"]`);
+    if(eventBtn) {
+        eventBtn.classList.remove('btn-secondary');
+        eventBtn.classList.add('btn-primary');
+    }
+    
+    if (tabId === 'grammar-add') renderGrammarGroupSelect();
+    if (tabId === 'grammar-list') renderGrammarList();
+    if (tabId === 'grammar-random') loadRandomGrammarPractice();
+}
+
+function renderGrammarGroupSelect() {
+    const select = document.getElementById('grammar-group-select');
+    select.innerHTML = '';
+    appData.grammarGroups.forEach(g => {
+        select.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+    });
+    if (appData.grammarGroups.length === 0) {
+        select.innerHTML = '<option value="" disabled selected>Vui lòng tạo nhóm ngữ pháp trước</option>';
+    }
+}
+
+document.getElementById('add-grammar-group-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById('grammar-group-name').value.trim();
+    const color = document.getElementById('grammar-group-color').value;
+    if (!name) return;
+    
+    appData.grammarGroups.push({
+        id: generateId(),
+        name,
+        color
+    });
+    saveData();
+    e.target.reset();
+    alert('Đã tạo nhóm ngữ pháp thành công!');
+});
+
+document.getElementById('add-grammar-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const groupId = document.getElementById('grammar-group-select').value;
+    const structure = document.getElementById('grammar-structure').value.trim();
+    const example = document.getElementById('grammar-example').value.trim();
+    const translation = document.getElementById('grammar-translation').value.trim();
+    const explanation = document.getElementById('grammar-explanation').value.trim();
+    
+    if (!groupId || !structure || !example || !translation) return;
+    
+    appData.grammars.push({
+        id: generateId(),
+        groupId,
+        structure,
+        example,
+        translation,
+        explanation,
+        practiceCount: 0
+    });
+    saveData();
+    e.target.reset();
+    alert('Đã thêm ngữ pháp thành công!');
+});
+
+function renderGrammarList() {
+    const grid = document.getElementById('grammar-groups-grid');
+    grid.innerHTML = '';
+    
+    if (appData.grammarGroups.length === 0) {
+        grid.innerHTML = '<p>Chưa có nhóm ngữ pháp nào.</p>';
+        return;
+    }
+    
+    appData.grammarGroups.forEach(g => {
+        const count = appData.grammars.filter(gr => gr.groupId === g.id).length;
+        grid.innerHTML += `
+            <div class="stat-card clickable" style="border-left: 4px solid ${g.color};" onclick="openGrammarTable('${g.id}')">
+                <div class="stat-info">
+                    <h3>${g.name}</h3>
+                    <p>${count} mẫu câu</p>
+                </div>
+            </div>
+        `;
+    });
+}
+
+function openGrammarTable(groupId) {
+    const group = appData.grammarGroups.find(g => g.id === groupId);
+    if (!group) return;
+    
+    document.getElementById('grammar-groups-grid').classList.add('hidden');
+    document.getElementById('grammar-items-table-container').classList.remove('hidden');
+    document.getElementById('grammar-table-title').textContent = `Nhóm: ${group.name}`;
+    
+    const tbody = document.getElementById('grammar-items-tbody');
+    tbody.innerHTML = '';
+    
+    const items = appData.grammars.filter(g => g.groupId === groupId);
+    items.forEach((item, index) => {
+        tbody.innerHTML += `
+            <tr style="border-bottom: 1px solid var(--border-color);">
+                <td style="padding: 10px;">${index + 1}</td>
+                <td style="padding: 10px; font-weight: bold; color: var(--primary);">${item.structure}</td>
+                <td style="padding: 10px;">${item.example}</td>
+                <td style="padding: 10px;">${item.translation}</td>
+                <td style="padding: 10px;" class="text-muted">${item.explanation || '--'}</td>
+                <td style="padding: 10px;">${item.practiceCount} lần</td>
+                <td style="padding: 10px;">
+                    <button class="btn btn-primary btn-small" onclick="startSingleGrammarPractice('${item.id}')">Luyện tập</button>
+                </td>
+            </tr>
+        `;
+    });
+}
+
+function closeGrammarTable() {
+    document.getElementById('grammar-items-table-container').classList.add('hidden');
+    document.getElementById('grammar-groups-grid').classList.remove('hidden');
+}
+
+// Single Grammar Practice
+let currentSGPItem = null;
+let currentSGPWords = [];
+
+function startSingleGrammarPractice(grammarId) {
+    const item = appData.grammars.find(g => g.id === grammarId);
+    if (!item) return;
+    currentSGPItem = item;
+    
+    document.getElementById('grammar-items-table-container').classList.add('hidden');
+    document.getElementById('single-grammar-practice').classList.remove('hidden');
+    document.getElementById('sgp-structure').textContent = item.structure;
+    
+    // Pick 5 random words
+    const validWords = appData.words.filter(w => w.kanji && w.meaning);
+    const shuffled = validWords.sort(() => 0.5 - Math.random());
+    currentSGPWords = shuffled.slice(0, 5);
+    
+    const wordsContainer = document.getElementById('sgp-words-container');
+    wordsContainer.innerHTML = '';
+    const inputsContainer = document.getElementById('sgp-inputs-container');
+    inputsContainer.innerHTML = '';
+    
+    currentSGPWords.forEach((w, index) => {
+        wordsContainer.innerHTML += `
+            <div class="stat-card" style="padding: 10px; text-align: center;">
+                <h4 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 5px;">${w.kanji}</h4>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">${w.meaning}</p>
+            </div>
+        `;
+        
+        inputsContainer.innerHTML += `
+            <div class="form-group">
+                <label>Câu ${index + 1} (với từ ${w.kanji})</label>
+                <input type="text" class="sgp-input" required autocomplete="off">
+            </div>
+        `;
+    });
+}
+
+function closeSingleGrammarPractice() {
+    document.getElementById('single-grammar-practice').classList.add('hidden');
+    document.getElementById('grammar-items-table-container').classList.remove('hidden');
+}
+
+document.getElementById('sgp-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (currentSGPItem) {
+        currentSGPItem.practiceCount++;
+        saveData();
+        alert('Chúc mừng! Bạn đã hoàn thành luyện tập mẫu câu này.');
+        closeSingleGrammarPractice();
+        openGrammarTable(currentSGPItem.groupId);
+    }
+});
+
+// Random Grammar Practice
+let currentRandomGrammars = [];
+let currentRandomWords = [];
+
+window.loadRandomGrammarPractice = function() {
+    const grammars = appData.grammars.filter(g => g.structure);
+    const words = appData.words.filter(w => w.kanji && w.meaning);
+    
+    if (grammars.length === 0 || words.length === 0) {
+        alert('Chưa đủ dữ liệu từ vựng hoặc ngữ pháp để luyện tập ngẫu nhiên.');
+        return;
+    }
+    
+    const shuffledG = [...grammars].sort(() => 0.5 - Math.random());
+    currentRandomGrammars = shuffledG.slice(0, 5);
+    
+    const shuffledW = [...words].sort(() => 0.5 - Math.random());
+    currentRandomWords = shuffledW.slice(0, 5);
+    
+    const gList = document.getElementById('random-grammars-list');
+    gList.innerHTML = currentRandomGrammars.map(g => `<li><strong>${g.structure}</strong>: ${g.translation}</li>`).join('');
+    
+    const wGrid = document.getElementById('random-words-grid');
+    wGrid.innerHTML = currentRandomWords.map(w => `
+        <div class="stat-card" style="padding: 10px; text-align: center;">
+            <div style="font-size: 1.2rem; color: var(--text-main);">${w.kanji}</div>
+            <div style="font-size: 0.85rem; color: var(--text-muted);">${w.meaning}</div>
+        </div>
+    `).join('');
+    
+    document.getElementById('random-grammar-form').reset();
+}
+
+document.getElementById('random-grammar-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    currentRandomGrammars.forEach(g => {
+        g.practiceCount++;
+    });
+    saveData();
+    alert('Nộp bài thành công! Các mẫu câu đã được cộng lượt luyện tập.');
+    loadRandomGrammarPractice();
+});
+
+// Weekly Task Modal (Mockup logic)
+window.openWeeklyTaskModal = function() {
+    alert('Chức năng kiểm tra tuần: Chức năng này sẽ được triển khai chi tiết sau. Bạn vừa nhấn vào nhiệm vụ tuần!');
+    // For now just hide it and set completed
+    document.getElementById('weekly-task-banner').classList.add('hidden');
+    appData.weeklyGrammarTask.lastCompletedDate = new Date().toDateString();
+    saveData();
+}
+
 // === INIT ===
 document.querySelectorAll('.nav-links a').forEach(link => {
     link.addEventListener('click', (e) => {
@@ -935,5 +1358,8 @@ document.querySelectorAll('.nav-links a').forEach(link => {
 
 // Start app
 loadData();
+checkDailyStatus();
+if(appData.speakingLogs.length > 0) {
+    renderSpeakingView();
+}
 navigateTo('dashboard');
-
