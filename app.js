@@ -468,7 +468,7 @@ document.getElementById('image-input')?.addEventListener('change', (e) => {
     }
 });
 
-addWordForm.addEventListener('submit', (e) => {
+document.getElementById('add-word-form').addEventListener('submit', (e) => {
     e.preventDefault();
     const compName = document.getElementById('component-input').value.trim();
     const kanji = document.getElementById('kanji-input').value.trim();
@@ -498,7 +498,7 @@ addWordForm.addEventListener('submit', (e) => {
 
     saveData();
 
-    addWordForm.reset();
+    document.getElementById('add-word-form').reset();
     currentSelectedImageBase64 = null;
     document.getElementById('image-preview').style.display = 'none';
     document.getElementById('image-preview-img').src = '';
@@ -546,7 +546,7 @@ document.getElementById('btn-delete-selected-words').addEventListener('click', (
 });
 
 window.toggleWordSelection = function(id, event) {
-    event.stopPropagation();
+    if (event) event.stopPropagation();
     if (selectedWordIds.has(id)) {
         selectedWordIds.delete(id);
     } else {
