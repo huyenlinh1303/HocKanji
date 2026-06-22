@@ -27,6 +27,7 @@
                 <li><a href="#" data-target="practice"><i class="ph ph-brain"></i> Luyện tập</a></li>
                 <li><a href="#" data-target="speaking"><i class="ph ph-microphone"></i> Luyện nói</a></li>
                 <li><a href="#" data-target="grammar"><i class="ph ph-text-aa"></i> Ngữ pháp</a></li>
+                <li><a href="#" data-target="notifications"><i class="ph ph-bell"></i> Thông báo <span id="nav-notif-badge" class="badge hidden" style="background: var(--danger); color: white; border-radius: 50%; padding: 2px 6px; font-size: 10px; margin-left: auto;"></span></a></li>
                 <li><a href="#" data-target="dictionary"><i class="ph ph-books"></i> Từ điển</a></li>
             </ul>
         </nav>
@@ -117,8 +118,14 @@
                 </div>
 
                 <div class="card">
-                    <h2>Danh sách các nhóm</h2>
-                    <div id="groups-list" class="groups-grid mt-4">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+                        <h2 style="margin: 0;">Danh sách các nhóm</h2>
+                        <div class="flex-center gap-2">
+                            <button id="btn-toggle-delete-groups" class="btn btn-secondary btn-small"><i class="ph ph-trash"></i> Chế độ Xóa</button>
+                            <button id="btn-delete-selected-groups" class="btn btn-primary btn-small hidden" style="background: var(--danger);"><i class="ph ph-trash"></i> Xóa nhóm đã chọn</button>
+                        </div>
+                    </div>
+                    <div id="groups-list" class="groups-grid">
                         <!-- Danh sách nhóm sẽ được render ở đây -->
                     </div>
                 </div>
@@ -254,6 +261,10 @@
                     <div class="dict-header">
                         <h2 id="dict-title">Từ điển của bạn</h2>
                         <button id="btn-clear-dict-filter" class="btn btn-secondary btn-small hidden"><i class="ph ph-x"></i> Hủy Lọc</button>
+                        <div class="flex-center gap-2" style="margin-left: auto; margin-right: 16px;">
+                            <button id="btn-toggle-delete-words" class="btn btn-secondary btn-small"><i class="ph ph-trash"></i> Chế độ Xóa</button>
+                            <button id="btn-delete-selected-words" class="btn btn-primary btn-small hidden" style="background: var(--danger);"><i class="ph ph-trash"></i> Xóa từ đã chọn</button>
+                        </div>
                         <div class="search-box">
                             <i class="ph ph-magnifying-glass"></i>
                             <input type="text" id="search-dict" placeholder="Tìm kiếm từ hoặc nghĩa...">
@@ -432,6 +443,16 @@
                         <textarea id="random-grammar-text" rows="5" placeholder="Viết đoạn văn của bạn vào đây..." required></textarea>
                         <button type="submit" class="btn btn-primary mt-3 w-100">Nộp bài</button>
                     </form>
+                </div>
+            </section>
+            <!-- Notifications Section -->
+            <section id="notifications" class="page-section hidden">
+                <div class="card">
+                    <h2>Thông báo & Nhiệm vụ hôm nay</h2>
+                    <p class="subtitle">Hoàn thành các nhiệm vụ bên dưới để duy trì thói quen học tập của bạn.</p>
+                    <div id="notifications-list" class="mt-4" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Tasks will be populated here -->
+                    </div>
                 </div>
             </section>
         </main>
