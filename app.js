@@ -90,7 +90,7 @@ function generateId() {
 }
 
 // === NAVIGATION ===
-const pages = ['dashboard', 'groups', 'add-word', 'practice', 'speaking', 'grammar', 'dictionary'];
+const pages = ['dashboard', 'groups', 'add-word', 'practice', 'speaking', 'grammar', 'dictionary', 'notifications'];
 const pageTitles = {
     'dashboard': 'Tổng quan',
     'groups': 'Quản lý Nhóm',
@@ -98,7 +98,8 @@ const pageTitles = {
     'practice': 'Luyện tập',
     'speaking': 'Luyện nói',
     'grammar': 'Ngữ pháp',
-    'dictionary': 'Từ điển'
+    'dictionary': 'Từ điển',
+    'notifications': 'Thông báo'
 };
 
 function navigateTo(pageId) {
@@ -188,6 +189,46 @@ document.getElementById('add-group-form').addEventListener('submit', (e) => {
     setTimeout(() => msg.classList.add('hidden'), 3000);
 });
 
+let isGroupDeleteMode = false;
+let selectedGroupIds = new Set();
+
+document.getElementById('btn-toggle-delete-groups').addEventListener('click', () => {
+    isGroupDeleteMode = !isGroupDeleteMode;
+    selectedGroupIds.clear();
+    
+    if (isGroupDeleteMode) {
+        document.getElementById('btn-toggle-delete-groups').classList.add('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-groups').classList.remove('hidden');
+    } else {
+        document.getElementById('btn-toggle-delete-groups').classList.remove('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-groups').classList.add('hidden');
+    }
+    renderGroups();
+});
+
+document.getElementById('btn-delete-selected-groups').addEventListener('click', () => {
+    if (selectedGroupIds.size === 0) return;
+    if (confirm(`Bạn có chắc muốn xóa ${selectedGroupIds.size} nhóm đã chọn? Mọi từ vựng trong các nhóm này cũng sẽ bị xóa vĩnh viễn.`)) {
+        appData.components = appData.components.filter(c => !selectedGroupIds.has(c.id));
+        appData.words = appData.words.filter(w => !selectedGroupIds.has(w.componentId));
+        saveData();
+        
+        isGroupDeleteMode = false;
+        selectedGroupIds.clear();
+        document.getElementById('btn-toggle-delete-groups').classList.remove('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-groups').classList.add('hidden');
+        renderGroups();
+    }
+});
+
+window.toggleGroupSelection = function(id) {
+    if (selectedGroupIds.has(id)) {
+        selectedGroupIds.delete(id);
+    } else {
+        selectedGroupIds.add(id);
+    }
+}
+
 function renderGroups() {
     const list = document.getElementById('groups-list');
     list.innerHTML = '';
@@ -200,9 +241,16 @@ function renderGroups() {
     appData.components.forEach(comp => {
         const wordCount = appData.words.filter(w => w.componentId === comp.id).length;
         
+        const checkboxHTML = isGroupDeleteMode ? `
+            <div style="position: absolute; top: 12px; right: 12px; z-index: 2;">
+                <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer;" ${selectedGroupIds.has(comp.id) ? 'checked' : ''} onchange="toggleGroupSelection('${comp.id}')">
+            </div>
+        ` : '';
+
         list.innerHTML += `
-            <div class="group-item-card">
-                <div class="group-item-header">
+            <div class="group-item-card" style="position: relative; ${isGroupDeleteMode ? 'border: 2px solid var(--danger);' : ''}">
+                ${checkboxHTML}
+                <div class="group-item-header" style="${isGroupDeleteMode ? 'opacity: 0.7; pointer-events: none;' : ''}">
                     <div class="group-item-kanji">${comp.name}</div>
                     <div class="group-item-info">
                         <div class="group-item-phonetic">Âm: ${comp.phonetic || '--'}</div>
@@ -466,6 +514,46 @@ document.getElementById('btn-clear-dict-filter').addEventListener('click', () =>
     renderDictionary();
 });
 
+let isWordDeleteMode = false;
+let selectedWordIds = new Set();
+
+document.getElementById('btn-toggle-delete-words').addEventListener('click', () => {
+    isWordDeleteMode = !isWordDeleteMode;
+    selectedWordIds.clear();
+    
+    if (isWordDeleteMode) {
+        document.getElementById('btn-toggle-delete-words').classList.add('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-words').classList.remove('hidden');
+    } else {
+        document.getElementById('btn-toggle-delete-words').classList.remove('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-words').classList.add('hidden');
+    }
+    renderDictionary();
+});
+
+document.getElementById('btn-delete-selected-words').addEventListener('click', () => {
+    if (selectedWordIds.size === 0) return;
+    if (confirm(`Bạn có chắc muốn xóa ${selectedWordIds.size} từ vựng đã chọn?`)) {
+        appData.words = appData.words.filter(w => !selectedWordIds.has(w.id));
+        saveData();
+        
+        isWordDeleteMode = false;
+        selectedWordIds.clear();
+        document.getElementById('btn-toggle-delete-words').classList.remove('bg-danger', 'text-white');
+        document.getElementById('btn-delete-selected-words').classList.add('hidden');
+        renderDictionary();
+    }
+});
+
+window.toggleWordSelection = function(id, event) {
+    event.stopPropagation();
+    if (selectedWordIds.has(id)) {
+        selectedWordIds.delete(id);
+    } else {
+        selectedWordIds.add(id);
+    }
+}
+
 function renderDictionary() {
     const container = document.getElementById('dictionary-list');
     container.innerHTML = '';
@@ -514,16 +602,24 @@ function renderDictionary() {
                 </div>
                 <div class="dict-words">
                     ${filteredWords.map(w => `
-                        <div class="dict-word-card" style="cursor: pointer; position: relative;" onclick="openWordDetailModal('${w.id}')">
-                            ${w.image ? `<img src="${w.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
-                            <div class="dict-kanji">${w.kanji}</div>
-                            ${w.phonetic ? `<div class="dict-phonetic" style="font-size: 0.9em; color: var(--text-muted); margin-top: 2px;">[${w.phonetic}]</div>` : ''}
-                            <div class="dict-romaji">${w.romaji}</div>
-                            <div class="dict-meaning">${w.meaning}</div>
-                            ${w.explanation ? `<div class="dict-meaning text-muted" style="margin-top: 4px; font-style: italic; font-size: 0.85em;">Lý giải: ${w.explanation}</div>` : ''}
-                            <button class="btn-edit-word" onclick="event.stopPropagation(); openEditWordModal('${w.id}')" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;">
-                                <i class="ph ph-pencil"></i>
-                            </button>
+                        <div class="dict-word-card" style="cursor: pointer; position: relative; ${isWordDeleteMode ? 'border: 2px solid var(--danger);' : ''}" onclick="${isWordDeleteMode ? `toggleWordSelection('${w.id}', event); renderDictionary();` : `openWordDetailModal('${w.id}')`}">
+                            ${isWordDeleteMode ? `
+                                <div style="position: absolute; top: 8px; left: 8px; z-index: 2;">
+                                    <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer;" ${selectedWordIds.has(w.id) ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleWordSelection('${w.id}', event); renderDictionary();">
+                                </div>
+                            ` : `
+                                <button class="btn-edit-word" onclick="event.stopPropagation(); openEditWordModal('${w.id}')" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; z-index: 2;">
+                                    <i class="ph ph-pencil"></i>
+                                </button>
+                            `}
+                            <div style="${isWordDeleteMode ? 'opacity: 0.7; pointer-events: none;' : ''}">
+                                ${w.image ? `<img src="${w.image}" style="width: 100%; height: 100px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;" />` : ''}
+                                <div class="dict-kanji">${w.kanji}</div>
+                                ${w.phonetic ? `<div class="dict-phonetic" style="font-size: 0.9em; color: var(--text-muted); margin-top: 2px;">[${w.phonetic}]</div>` : ''}
+                                <div class="dict-romaji">${w.romaji}</div>
+                                <div class="dict-meaning">${w.meaning}</div>
+                                ${w.explanation ? `<div class="dict-meaning text-muted" style="margin-top: 4px; font-style: italic; font-size: 0.85em;">Lý giải: ${w.explanation}</div>` : ''}
+                            </div>
                         </div>
                     `).join('')}
                 </div>
@@ -981,7 +1077,16 @@ document.getElementById('btn-back-home').addEventListener('click', () => {
 
 function checkDailyStatus() {
     const today = new Date().toDateString();
-    if (appData.punishmentState.lastCheckedDate === today) return;
+    if (!appData.notifications) appData.notifications = [];
+    
+    if (appData.punishmentState.lastCheckedDate === today) {
+        renderNotifications();
+        return;
+    }
+    
+    appData.notifications = [];
+    appData.notifications.push({ id: 'task-practice', text: 'Luyện tập Kanji 5 nhóm ngẫu nhiên hôm nay', completed: false });
+    appData.notifications.push({ id: 'task-speaking', text: 'Nhập bài Luyện nói mới hôm nay', completed: false });
     
     if (appData.speakingLogs.length > 0) {
         const lastLogDate = new Date(appData.speakingLogs[appData.speakingLogs.length - 1].date);
@@ -1007,16 +1112,60 @@ function checkDailyStatus() {
         const diffDays = Math.floor((now - last) / (1000 * 60 * 60 * 24));
         if (diffDays >= 7) {
             document.getElementById('weekly-task-banner').classList.remove('hidden');
+            appData.notifications.push({ id: 'task-weekly', text: 'Nhiệm vụ tuần: Ôn tập ngữ pháp', completed: false });
         }
     } else {
         const practicedCount = appData.grammars.filter(g => g.practiceCount > 0).length;
         if (practicedCount >= 5) {
              document.getElementById('weekly-task-banner').classList.remove('hidden');
+             appData.notifications.push({ id: 'task-weekly', text: 'Nhiệm vụ tuần: Ôn tập ngữ pháp', completed: false });
         }
     }
     
     appData.punishmentState.lastCheckedDate = today;
     saveData();
+    renderNotifications();
+}
+
+function renderNotifications() {
+    const list = document.getElementById('notifications-list');
+    if (!list) return;
+    list.innerHTML = '';
+    
+    if (!appData.notifications || appData.notifications.length === 0) {
+        list.innerHTML = '<p class="text-muted text-center">Hôm nay không có nhiệm vụ nào!</p>';
+    } else {
+        appData.notifications.forEach(notif => {
+            const opacity = notif.completed ? '0.5' : '1';
+            const checked = notif.completed ? 'checked' : '';
+            list.innerHTML += `
+                <div class="stat-card" style="opacity: ${opacity}; display: flex; align-items: center; gap: 16px; padding: 16px; transition: opacity 0.3s;">
+                    <input type="checkbox" style="width: 20px; height: 20px; cursor: pointer;" ${checked} onchange="toggleNotification('${notif.id}')">
+                    <span style="font-size: 16px; font-weight: 500;">${notif.text}</span>
+                </div>
+            `;
+        });
+    }
+    
+    const badge = document.getElementById('nav-notif-badge');
+    if(badge) {
+        const uncompleted = (appData.notifications || []).filter(n => !n.completed).length;
+        if (uncompleted > 0) {
+            badge.textContent = uncompleted;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
+window.toggleNotification = function(id) {
+    const notif = appData.notifications.find(n => n.id === id);
+    if(notif) {
+        notif.completed = !notif.completed;
+        saveData();
+        renderNotifications();
+    }
 }
 
 // === SPEAKING ===
@@ -1096,13 +1245,25 @@ function renderSpeakingGallery() {
     
     appData.speakingLogs.forEach((log, index) => {
         grid.innerHTML += `
-            <div class="stat-card clickable" style="flex-direction: column; align-items: stretch; text-align: center; padding: 16px;" onclick="openSpeakingPractice('${log.id}')">
+            <div class="stat-card clickable" style="position: relative; flex-direction: column; align-items: stretch; text-align: center; padding: 16px;" onclick="openSpeakingPractice('${log.id}')">
+                <button class="btn btn-secondary btn-small" style="position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.9); color: var(--danger); padding: 4px; border: none;" onclick="deleteSpeakingLog('${log.id}', event)" title="Xóa bài nói này">
+                    <i class="ph ph-trash"></i>
+                </button>
                 <img src="${log.image}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; box-shadow: var(--shadow-sm);" />
                 <h3 style="margin-bottom: 4px;">Ngày ${index + 1} (${log.date})</h3>
                 <p class="text-muted" style="font-size: 0.9rem;">Đã luyện lại: ${log.practiceCount || 0} lần</p>
             </div>
         `;
     });
+}
+
+window.deleteSpeakingLog = function(logId, event) {
+    event.stopPropagation();
+    if (confirm("Bạn có chắc muốn xóa bài nói này không? Hành động này không thể hoàn tác.")) {
+        appData.speakingLogs = appData.speakingLogs.filter(l => l.id !== logId);
+        saveData();
+        renderSpeakingGallery();
+    }
 }
 
 window.openSpeakingPractice = function(logId) {
