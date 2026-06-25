@@ -82,6 +82,16 @@
                     <p>Hãy duy trì thói quen luyện tập mỗi ngày để ghi nhớ Kanji tốt hơn.</p>
                     <button class="btn btn-primary" id="btn-start-practice-dash">Bắt đầu luyện tập ngay</button>
                 </div>
+
+                <div class="card mt-4" style="margin-top: 20px;">
+                    <h2>Quản lý dữ liệu</h2>
+                    <p class="subtitle text-muted">Lưu trữ dự phòng (backup) hoặc chuyển dữ liệu sang thiết bị khác.</p>
+                    <div class="flex gap-3" style="margin-top: 16px;">
+                        <button class="btn btn-primary" id="btn-export-data"><i class="ph ph-download-simple"></i> Xuất dữ liệu</button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('input-import-data').click()"><i class="ph ph-upload-simple"></i> Nhập dữ liệu</button>
+                        <input type="file" id="input-import-data" accept=".json" style="display: none;">
+                    </div>
+                </div>
             </section>
 
             <!-- Groups Section -->
@@ -557,6 +567,8 @@
         </div>
     </div>
 
+    <!-- localForage for IndexedDB storage -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/localforage/1.10.0/localforage.min.js"></script>
     <script src="app.js?v=3"></script>
 </body>
 </html>
