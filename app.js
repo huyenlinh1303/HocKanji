@@ -54,34 +54,54 @@ const styleSheet = document.createElement("style");
 styleSheet.innerText = modalCSS;
 document.head.appendChild(styleSheet);
 
-// Load data from localStorage
-function loadData() {
-    const saved = localStorage.getItem("appData");
-    if (saved) {
-        appData = JSON.parse(saved);
-        if(!appData.speakingLogs) appData.speakingLogs = [];
-        if(!appData.grammarGroups) appData.grammarGroups = [];
-        if(!appData.grammars) appData.grammars = [];
-        if(!appData.punishmentState) appData.punishmentState = { active: false, multiplier: 1 };
-        if(!appData.weeklyGrammarTask) appData.weeklyGrammarTask = { lastCompletedDate: null };
-        // Ensure backwards compatibility
-        appData.components.forEach(c => {
-            if (c.phonetic === undefined) c.phonetic = '';
-            if (c.meaning === undefined) c.meaning = '';
-            if (c.romaji === undefined) c.romaji = '';
-            if (c.explanation === undefined) c.explanation = '';
-        });
-        appData.words.forEach(w => {
-            if (w.romaji === undefined) w.romaji = '';
-            if (w.phonetic === undefined) w.phonetic = '';
-            if (w.explanation === undefined) w.explanation = '';
-        });
+// Load data from localForage/localStorage
+async function loadData() {
+    try {
+        let saved = await localforage.getItem("appData");
+        
+        // Migrate from localStorage if localForage is empty
+        if (!saved) {
+            const lsSaved = localStorage.getItem("appData");
+            if (lsSaved) {
+                saved = JSON.parse(lsSaved);
+                // Save to localForage immediately
+                await localforage.setItem("appData", saved);
+                console.log("Migrated data from localStorage to localForage");
+            }
+        }
+        
+        if (saved) {
+            appData = saved;
+            if(!appData.speakingLogs) appData.speakingLogs = [];
+            if(!appData.grammarGroups) appData.grammarGroups = [];
+            if(!appData.grammars) appData.grammars = [];
+            if(!appData.punishmentState) appData.punishmentState = { active: false, multiplier: 1 };
+            if(!appData.weeklyGrammarTask) appData.weeklyGrammarTask = { lastCompletedDate: null };
+            // Ensure backwards compatibility
+            appData.components.forEach(c => {
+                if (c.phonetic === undefined) c.phonetic = '';
+                if (c.meaning === undefined) c.meaning = '';
+                if (c.romaji === undefined) c.romaji = '';
+                if (c.explanation === undefined) c.explanation = '';
+            });
+            appData.words.forEach(w => {
+                if (w.romaji === undefined) w.romaji = '';
+                if (w.phonetic === undefined) w.phonetic = '';
+                if (w.explanation === undefined) w.explanation = '';
+            });
+        }
+    } catch (err) {
+        console.error("Error loading data:", err);
     }
 }
 
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem("appData", JSON.stringify(appData));
+// Save data to localForage
+async function saveData() {
+    try {
+        await localforage.setItem("appData", appData);
+    } catch (err) {
+        console.error("Error saving data:", err);
+    }
 }
 
 // Generate unique ID
@@ -149,6 +169,47 @@ document.getElementById('card-total-words').addEventListener('click', () => {
 
 document.getElementById('card-practiced-today').addEventListener('click', () => {
     navigateTo('practice');
+});
+
+// === DATA MANAGEMENT ===
+document.getElementById('btn-export-data').addEventListener('click', () => {
+    const dataStr = JSON.stringify(appData);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kanji_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    
+    URL.revokeObjectURL(url);
+});
+
+document.getElementById('input-import-data').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            if (importedData && importedData.components && importedData.words) {
+                if (confirm('Bạn có chắc chắn muốn ghi đè toàn bộ dữ liệu hiện tại bằng dữ liệu từ file này không?')) {
+                    appData = importedData;
+                    await saveData();
+                    alert('Đã khôi phục dữ liệu thành công! Trang sẽ được tải lại.');
+                    location.reload();
+                }
+            } else {
+                alert('File không đúng định dạng dữ liệu của ứng dụng.');
+            }
+        } catch (err) {
+            console.error(err);
+            alert('Lỗi khi đọc file. Vui lòng kiểm tra lại.');
+        }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset input
 });
 
 // === GROUPS MANAGEMENT ===
@@ -1654,11 +1715,15 @@ document.querySelectorAll('.nav-links a').forEach(link => {
 });
 
 // Start app
-loadData();
-checkDailyStatus();
-if(appData.speakingLogs.length > 0) {
-    switchSpeakingTab('speaking-gallery');
-} else {
-    switchSpeakingTab('speaking-add');
+async function initApp() {
+    await loadData();
+    checkDailyStatus();
+    if(appData.speakingLogs.length > 0) {
+        switchSpeakingTab('speaking-gallery');
+    } else {
+        switchSpeakingTab('speaking-add');
+    }
+    navigateTo('dashboard');
 }
-navigateTo('dashboard');
+
+initApp();
