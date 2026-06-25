@@ -543,53 +543,99 @@ componentInput.addEventListener('input', (e) => {
     }
 });
 
-document.addEventListener('click', (e) => {
-    if (e.target !== componentInput) suggestionsList.classList.add('hidden');
+// Helper function to process image files into base64
+function processImageFile(file, callback) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height = Math.round(height * (MAX_WIDTH / width));
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width = Math.round(width * (MAX_HEIGHT / height));
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            callback(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// Global paste listener for images
+document.addEventListener('paste', (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    let imageFile = null;
+    for (let index in items) {
+        const item = items[index];
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+            imageFile = item.getAsFile();
+            break;
+        }
+    }
+    
+    if (imageFile) {
+        // Check which section is active
+        const addWordActive = document.getElementById('add-word').classList.contains('active');
+        const editWordModalActive = !document.getElementById('edit-word-modal').classList.contains('hidden');
+        
+        if (editWordModalActive) {
+            processImageFile(imageFile, (base64) => {
+                currentEditWordImageBase64 = base64;
+                document.getElementById('edit-word-image-preview').style.display = 'block';
+                document.getElementById('edit-word-image-preview-img').src = currentEditWordImageBase64;
+            });
+        } else if (addWordActive) {
+            processImageFile(imageFile, (base64) => {
+                currentSelectedImageBase64 = base64;
+                document.getElementById('image-preview').style.display = 'block';
+                document.getElementById('image-preview-img').src = currentSelectedImageBase64;
+            });
+        }
+    }
 });
 
 let currentSelectedImageBase64 = null;
+
+// Add Word Image Handlers
+document.getElementById('image-paste-area')?.addEventListener('click', () => {
+    document.getElementById('image-input').click();
+});
+
 document.getElementById('image-input')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const MAX_WIDTH = 800;
-                const MAX_HEIGHT = 800;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height = Math.round(height * (MAX_WIDTH / width));
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width = Math.round(width * (MAX_HEIGHT / height));
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                currentSelectedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                document.getElementById('image-preview').style.display = 'block';
-                document.getElementById('image-preview-img').src = currentSelectedImageBase64;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        currentSelectedImageBase64 = null;
-        document.getElementById('image-preview').style.display = 'none';
-        document.getElementById('image-preview-img').src = '';
+        processImageFile(file, (base64) => {
+            currentSelectedImageBase64 = base64;
+            document.getElementById('image-preview').style.display = 'block';
+            document.getElementById('image-preview-img').src = currentSelectedImageBase64;
+        });
     }
+});
+
+document.getElementById('btn-remove-image')?.addEventListener('click', () => {
+    currentSelectedImageBase64 = null;
+    document.getElementById('image-input').value = '';
+    document.getElementById('image-preview').style.display = 'none';
+    document.getElementById('image-preview-img').src = '';
 });
 
 document.getElementById('add-word-form').addEventListener('submit', (e) => {
@@ -823,48 +869,27 @@ document.getElementById('btn-close-edit-word-modal')?.addEventListener('click', 
     document.getElementById('edit-word-modal').classList.add('hidden');
 });
 
+// Edit Word Image Handlers
+document.getElementById('edit-word-image-paste-area')?.addEventListener('click', () => {
+    document.getElementById('edit-word-image-input').click();
+});
+
 document.getElementById('edit-word-image-input')?.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const MAX_WIDTH = 800;
-                const MAX_HEIGHT = 800;
-                let width = img.width;
-                let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) {
-                        height = Math.round(height * (MAX_WIDTH / width));
-                        width = MAX_WIDTH;
-                    }
-                } else {
-                    if (height > MAX_HEIGHT) {
-                        width = Math.round(width * (MAX_HEIGHT / height));
-                        height = MAX_HEIGHT;
-                    }
-                }
-
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
-                
-                currentEditWordImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                document.getElementById('edit-word-image-preview').style.display = 'block';
-                document.getElementById('edit-word-image-preview-img').src = currentEditWordImageBase64;
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        currentEditWordImageBase64 = null;
-        document.getElementById('edit-word-image-preview').style.display = 'none';
-        document.getElementById('edit-word-image-preview-img').src = '';
+        processImageFile(file, (base64) => {
+            currentEditWordImageBase64 = base64;
+            document.getElementById('edit-word-image-preview').style.display = 'block';
+            document.getElementById('edit-word-image-preview-img').src = currentEditWordImageBase64;
+        });
     }
+});
+
+document.getElementById('btn-remove-edit-image')?.addEventListener('click', () => {
+    currentEditWordImageBase64 = null;
+    document.getElementById('edit-word-image-input').value = '';
+    document.getElementById('edit-word-image-preview').style.display = 'none';
+    document.getElementById('edit-word-image-preview-img').src = '';
 });
 
 document.getElementById('edit-word-form')?.addEventListener('submit', (e) => {
