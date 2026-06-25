@@ -122,7 +122,37 @@ const pageTitles = {
     'notifications': 'Thông báo'
 };
 
-function navigateTo(pageId) {
+let navHistory = []; // Stores { pageId, scrollY }
+
+window.goBack = function() {
+    if (navHistory.length === 0) return;
+    const prev = navHistory.pop();
+    navigateTo(prev.pageId, { isBack: true, restoreScrollY: prev.scrollY });
+};
+
+function navigateTo(pageId, options = { isBack: false, fromSidebar: false }) {
+    const activeSectionEl = document.querySelector('.page-section.active');
+    const currentPageId = activeSectionEl ? activeSectionEl.id : null;
+
+    if (options.fromSidebar) {
+        navHistory = []; // Clear history if clicked from sidebar
+    } else if (!options.isBack && currentPageId && currentPageId !== pageId) {
+        // Save current page to history before navigating away
+        navHistory.push({
+            pageId: currentPageId,
+            scrollY: window.scrollY || document.documentElement.scrollTop
+        });
+    }
+
+    const backBtn = document.getElementById('btn-back-history');
+    if (backBtn) {
+        if (navHistory.length > 0) {
+            backBtn.classList.remove('hidden');
+        } else {
+            backBtn.classList.add('hidden');
+        }
+    }
+
     document.querySelectorAll('.nav-links a').forEach(link => {
         link.classList.remove('active');
         if (link.dataset.target === pageId) link.classList.add('active');
@@ -145,6 +175,12 @@ function navigateTo(pageId) {
     if (pageId === 'practice') {
         if (practiceMode === 'daily') initPracticeView();
         // If single, it's already initialized before navigation
+    }
+
+    if (options.isBack && options.restoreScrollY !== undefined) {
+        setTimeout(() => window.scrollTo(0, options.restoreScrollY), 10);
+    } else if (!options.isBack) {
+        window.scrollTo(0, 0);
     }
 }
 
@@ -1710,7 +1746,7 @@ window.openWeeklyTaskModal = function() {
 document.querySelectorAll('.nav-links a').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
-        navigateTo(e.currentTarget.dataset.target);
+        navigateTo(e.currentTarget.dataset.target, { fromSidebar: true });
     });
 });
 
