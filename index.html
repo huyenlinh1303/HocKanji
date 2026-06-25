@@ -183,10 +183,15 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="image-input">Ảnh minh họa (Tùy chọn)</label>
-                            <input type="file" id="image-input" accept="image/*">
-                            <div id="image-preview" style="margin-top: 10px; max-width: 100%; display: none; text-align: center;">
+                            <label>Ảnh minh họa (Tùy chọn)</label>
+                            <div id="image-paste-area" style="border: 2px dashed var(--border-color); padding: 20px; text-align: center; cursor: pointer; border-radius: 8px; background: var(--bg-color); transition: all 0.2s;">
+                                <i class="ph ph-image" style="font-size: 24px; color: var(--text-muted);"></i>
+                                <p style="margin: 8px 0 0 0; color: var(--text-muted); font-size: 14px;">Click chọn file hoặc <strong>Ctrl+V</strong> để dán ảnh</p>
+                                <input type="file" id="image-input" accept="image/*" style="display: none;">
+                            </div>
+                            <div id="image-preview" style="margin-top: 10px; max-width: 100%; display: none; text-align: center; position: relative;">
                                 <img id="image-preview-img" style="max-width: 150px; max-height: 150px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+                                <button type="button" id="btn-remove-image" class="btn btn-secondary btn-small" style="position: absolute; top: -10px; right: 50%; transform: translateX(85px); background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="ph ph-x"></i></button>
                             </div>
                         </div>
 
@@ -556,10 +561,15 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="edit-word-image-input">Ảnh minh họa</label>
-                    <input type="file" id="edit-word-image-input" accept="image/*">
-                    <div id="edit-word-image-preview" style="margin-top: 10px; max-width: 100%; text-align: center; display: none;">
+                    <label>Ảnh minh họa</label>
+                    <div id="edit-word-image-paste-area" style="border: 2px dashed var(--border-color); padding: 20px; text-align: center; cursor: pointer; border-radius: 8px; background: var(--bg-color); transition: all 0.2s;">
+                        <i class="ph ph-image" style="font-size: 24px; color: var(--text-muted);"></i>
+                        <p style="margin: 8px 0 0 0; color: var(--text-muted); font-size: 14px;">Click chọn file hoặc <strong>Ctrl+V</strong> để dán ảnh</p>
+                        <input type="file" id="edit-word-image-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div id="edit-word-image-preview" style="margin-top: 10px; max-width: 100%; text-align: center; display: none; position: relative;">
                         <img id="edit-word-image-preview-img" style="max-width: 150px; max-height: 150px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" />
+                        <button type="button" id="btn-remove-edit-image" class="btn btn-secondary btn-small" style="position: absolute; top: -10px; right: 50%; transform: translateX(85px); background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; padding: 0; display: flex; align-items: center; justify-content: center;"><i class="ph ph-x"></i></button>
                     </div>
                 </div>
 
